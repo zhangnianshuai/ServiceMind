@@ -231,7 +231,11 @@ public class AfterSalesApplicationService {
 
         try {
             stateChange.accept(application);
-            return toResponse(application);
+
+            AfterSalesApplication saved =
+                afterSalesRepository.saveAndFlush(application);
+
+            return toResponse(saved);
         }
         catch (IllegalStateException exception) {
             throw new ResponseStatusException(
