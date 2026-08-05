@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.zhangnianshuai.servicemind.api.knowledge.dto.AddKnowledgeVersionRequest;
 import com.zhangnianshuai.servicemind.api.knowledge.dto.CreateKnowledgeDocumentRequest;
@@ -24,6 +26,7 @@ import com.zhangnianshuai.servicemind.api.knowledge.dto.KnowledgeVersionDetailRe
 import com.zhangnianshuai.servicemind.api.knowledge.dto.KnowledgeVersionSummaryResponse;
 import com.zhangnianshuai.servicemind.api.knowledge.dto.UpdateKnowledgeDocumentRequest;
 import com.zhangnianshuai.servicemind.application.knowledge.KnowledgeDocumentService;
+import com.zhangnianshuai.servicemind.application.knowledge.KnowledgeFileUploadService;
 import com.zhangnianshuai.servicemind.application.knowledge.KnowledgePublishingService;
 import com.zhangnianshuai.servicemind.domain.knowledge.KnowledgeDocumentCategory;
 import com.zhangnianshuai.servicemind.domain.knowledge.KnowledgeDocumentStatus;
@@ -37,12 +40,15 @@ public class KnowledgeDocumentController {
 
     private final KnowledgeDocumentService service;
     private final KnowledgePublishingService publishingService;
+    private final KnowledgeFileUploadService fileUploadService;
 
     public KnowledgeDocumentController(
             KnowledgeDocumentService service,
-            KnowledgePublishingService publishingService) {
+            KnowledgePublishingService publishingService,
+            KnowledgeFileUploadService fileUploadService) {
         this.service = service;
         this.publishingService = publishingService;
+        this.fileUploadService = fileUploadService;
     }
 
     @PostMapping
@@ -101,17 +107,32 @@ public class KnowledgeDocumentController {
         KnowledgeVersionDetailResponse response =
             service.addVersion(documentNo, request);
 
-        URI location = URI.create(
-            "/api/knowledge/documents/"
-                + documentNo
-                + "/versions/"
-                + response.versionNo()
+        return createdVersionResponse(
+            documentNo,
+            response
         );
+    }
 
-        return ResponseEntity
-            .status(HttpStatus.CREATED)
-            .location(location)
-            .body(response);
+    @PostMapping(
+        value = "/{documentNo}/versions/upload",
+        consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    )
+    public ResponseEntity<KnowledgeVersionDetailResponse>
+            uploadVersion(
+                @PathVariable
+                String documentNo,
+                @RequestParam("file")
+                MultipartFile file) {
+        KnowledgeVersionDetailResponse response =
+            fileUploadService.uploadVersion(
+                documentNo,
+                file
+            );
+
+        return createdVersionResponse(
+            documentNo,
+            response
+        );
     }
 
     @GetMapping("/{documentNo}/versions")
@@ -149,5 +170,22 @@ public class KnowledgeDocumentController {
             @PathVariable
             String documentNo) {
         return service.archive(documentNo);
+    }
+
+    private ResponseEntity<KnowledgeVersionDetailResponse>
+            createdVersionResponse(
+                String documentNo,
+                KnowledgeVersionDetailResponse response) {
+        URI location = URI.create(
+            "/api/knowledge/documents/"
+                + documentNo
+                + "/versions/"
+                + response.versionNo()
+        );
+
+        return ResponseEntity
+            .status(HttpStatus.CREATED)
+            .location(location)
+            .body(response);
     }
 }
