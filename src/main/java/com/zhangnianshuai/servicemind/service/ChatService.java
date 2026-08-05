@@ -6,7 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
-import com.zhangnianshuai.servicemind.agents.SupervisorAgent;
+import com.zhangnianshuai.servicemind.agents.ServiceMindAgent;
 import com.zhangnianshuai.servicemind.application.model.ByokChatService;
 
 @Service
@@ -15,13 +15,13 @@ public class ChatService {
     private static final Logger log =
         LoggerFactory.getLogger(ChatService.class);
 
-    private final SupervisorAgent supervisorAgent;
+    private final ServiceMindAgent serviceMindAgent;
     private final ByokChatService byokChatService;
 
     public ChatService(
-            SupervisorAgent supervisorAgent,
+            ServiceMindAgent serviceMindAgent,
             ByokChatService byokChatService) {
-        this.supervisorAgent = supervisorAgent;
+        this.serviceMindAgent = serviceMindAgent;
         this.byokChatService = byokChatService;
 
         log.info(
@@ -39,7 +39,7 @@ public class ChatService {
                 chatId
             );
 
-            return supervisorAgent.handle(
+            return serviceMindAgent.handle(
                 chatId,
                 userMessage
             );
