@@ -1,0 +1,13 @@
+package com.zhangnianshuai.servicemind;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class ServiceMindApplication {
+
+	public static void main(String[] args) {
+		SpringApplication.run(ServiceMindApplication.class, args);
+	}
+
+}
