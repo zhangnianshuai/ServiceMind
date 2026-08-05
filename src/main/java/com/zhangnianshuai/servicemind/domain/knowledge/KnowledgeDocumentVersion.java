@@ -162,8 +162,20 @@ public class KnowledgeDocumentVersion {
             rawContent,
             "Knowledge content is required."
         );
-        this.status = KnowledgeVersionStatus.PROCESSING;
+        this.status = KnowledgeVersionStatus.DRAFT;
         this.chunkCount = 0;
+    }
+
+    public void markProcessing() {
+        if (status == KnowledgeVersionStatus.ARCHIVED
+                || status == KnowledgeVersionStatus.READY) {
+            throw new IllegalStateException(
+                "This knowledge version cannot be processed."
+            );
+        }
+
+        status = KnowledgeVersionStatus.PROCESSING;
+        errorMessage = null;
     }
 
     public void markReady(

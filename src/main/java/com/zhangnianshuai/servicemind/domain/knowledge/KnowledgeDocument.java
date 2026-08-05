@@ -108,9 +108,20 @@ public class KnowledgeDocument {
         ensureNotArchived();
 
         latestVersionNo++;
-        status = KnowledgeDocumentStatus.PROCESSING;
+
+        if (activeVersionNo == null) {
+            status = KnowledgeDocumentStatus.DRAFT;
+        }
 
         return latestVersionNo;
+    }
+
+    public void markProcessing(int versionNo) {
+        validateVersionNumber(versionNo);
+
+        if (activeVersionNo == null) {
+            status = KnowledgeDocumentStatus.PROCESSING;
+        }
     }
 
     public void markReady(int versionNo) {
@@ -123,7 +134,8 @@ public class KnowledgeDocument {
     public void markFailed(int versionNo) {
         validateVersionNumber(versionNo);
 
-        if (versionNo == latestVersionNo) {
+        if (versionNo == latestVersionNo
+                && activeVersionNo == null) {
             status = KnowledgeDocumentStatus.FAILED;
         }
     }

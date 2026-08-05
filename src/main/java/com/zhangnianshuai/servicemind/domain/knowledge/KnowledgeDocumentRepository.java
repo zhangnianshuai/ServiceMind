@@ -14,6 +14,9 @@ public interface KnowledgeDocumentRepository
     boolean existsByDocumentNoIgnoreCase(String documentNo);
 
     List<KnowledgeDocument>
+        findAllByOrderByUpdatedAtDesc();
+
+    List<KnowledgeDocument>
         findByStatusOrderByUpdatedAtDesc(
             KnowledgeDocumentStatus status
         );
@@ -21,5 +24,11 @@ public interface KnowledgeDocumentRepository
     List<KnowledgeDocument>
         findByCategoryOrderByUpdatedAtDesc(
             KnowledgeDocumentCategory category
+        );
+
+    List<KnowledgeDocument>
+        findByCategoryAndStatusOrderByUpdatedAtDesc(
+            KnowledgeDocumentCategory category,
+            KnowledgeDocumentStatus status
         );
 }
