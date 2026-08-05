@@ -8,11 +8,11 @@
 		<version>3.5.10</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>com.loiane</groupId>
-	<artifactId>springfly</artifactId>
+	<groupId>com.zhangnianshuai</groupId>
+	<artifactId>servicemind</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>springfly</name>
-	<description>Demo project for Spring Boot</description>
+	<name>ServiceMind</name>
+	<description>Enterprise knowledge base and intelligent customer service platform</description>
 	<properties>
 		<java.version>25</java.version>
 	</properties>

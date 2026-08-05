@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "frontend": {
+    "servicemind-web": {
       "projectType": "application",
       "schematics": {
         "@schematics/angular:component": {
@@ -59,10 +59,10 @@
           "builder": "@angular/build:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "frontend:build:production"
+              "buildTarget": "servicemind-web:build:production"
             },
             "development": {
-              "buildTarget": "frontend:build:development"
+              "buildTarget": "servicemind-web:build:development"
             }
           },
           "defaultConfiguration": "development"
