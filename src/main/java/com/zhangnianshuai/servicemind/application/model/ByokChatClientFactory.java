@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import com.zhangnianshuai.servicemind.application.ai.ServiceMindPrompt;
 import com.zhangnianshuai.servicemind.application.ai.tool.AfterSalesQueryTools;
+import com.zhangnianshuai.servicemind.application.ai.tool.KnowledgeQueryTools;
 import com.zhangnianshuai.servicemind.application.ai.tool.OrderQueryTools;
 import com.zhangnianshuai.servicemind.application.ai.tool.SupportTicketQueryTools;
 
@@ -26,17 +27,21 @@ public class ByokChatClientFactory {
     private final OrderQueryTools orderQueryTools;
     private final AfterSalesQueryTools afterSalesQueryTools;
     private final SupportTicketQueryTools supportTicketQueryTools;
+    private final KnowledgeQueryTools knowledgeQueryTools;
 
     public ByokChatClientFactory(
             ChatMemory chatMemory,
             OrderQueryTools orderQueryTools,
             AfterSalesQueryTools afterSalesQueryTools,
-            SupportTicketQueryTools supportTicketQueryTools) {
+            SupportTicketQueryTools supportTicketQueryTools,
+            KnowledgeQueryTools knowledgeQueryTools) {
         this.chatMemory = chatMemory;
         this.orderQueryTools = orderQueryTools;
         this.afterSalesQueryTools = afterSalesQueryTools;
         this.supportTicketQueryTools =
             supportTicketQueryTools;
+        this.knowledgeQueryTools =
+            knowledgeQueryTools;
     }
 
     public ChatClient create(
@@ -74,7 +79,8 @@ public class ByokChatClientFactory {
                 .defaultTools(
                     orderQueryTools,
                     afterSalesQueryTools,
-                    supportTicketQueryTools
+                    supportTicketQueryTools,
+                    knowledgeQueryTools
                 )
                 .build();
         }

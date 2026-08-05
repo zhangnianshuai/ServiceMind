@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import com.zhangnianshuai.servicemind.application.ai.ServiceMindPrompt;
 import com.zhangnianshuai.servicemind.application.ai.tool.AfterSalesQueryTools;
+import com.zhangnianshuai.servicemind.application.ai.tool.KnowledgeQueryTools;
 import com.zhangnianshuai.servicemind.application.ai.tool.OrderQueryTools;
 import com.zhangnianshuai.servicemind.application.ai.tool.SupportTicketQueryTools;
 
@@ -25,7 +26,8 @@ public class ServiceMindAgent {
             ChatMemory chatMemory,
             OrderQueryTools orderQueryTools,
             AfterSalesQueryTools afterSalesQueryTools,
-            SupportTicketQueryTools supportTicketQueryTools) {
+            SupportTicketQueryTools supportTicketQueryTools,
+            KnowledgeQueryTools knowledgeQueryTools) {
         this.chatClient = chatClientBuilder
             .defaultSystem(ServiceMindPrompt.SYSTEM_PROMPT)
             .defaultAdvisors(
@@ -36,13 +38,14 @@ public class ServiceMindAgent {
             .defaultTools(
                 orderQueryTools,
                 afterSalesQueryTools,
-                supportTicketQueryTools
+                supportTicketQueryTools,
+                knowledgeQueryTools
             )
             .build();
 
         log.info(
             "ServiceMindAgent initialized with read-only "
-                + "business query tools"
+                + "business query and knowledge tools"
         );
     }
 
