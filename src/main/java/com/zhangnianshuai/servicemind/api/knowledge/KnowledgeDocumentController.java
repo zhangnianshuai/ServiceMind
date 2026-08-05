@@ -19,10 +19,12 @@ import com.zhangnianshuai.servicemind.api.knowledge.dto.AddKnowledgeVersionReque
 import com.zhangnianshuai.servicemind.api.knowledge.dto.CreateKnowledgeDocumentRequest;
 import com.zhangnianshuai.servicemind.api.knowledge.dto.KnowledgeDocumentDetailResponse;
 import com.zhangnianshuai.servicemind.api.knowledge.dto.KnowledgeDocumentSummaryResponse;
+import com.zhangnianshuai.servicemind.api.knowledge.dto.KnowledgePublishResponse;
 import com.zhangnianshuai.servicemind.api.knowledge.dto.KnowledgeVersionDetailResponse;
 import com.zhangnianshuai.servicemind.api.knowledge.dto.KnowledgeVersionSummaryResponse;
 import com.zhangnianshuai.servicemind.api.knowledge.dto.UpdateKnowledgeDocumentRequest;
 import com.zhangnianshuai.servicemind.application.knowledge.KnowledgeDocumentService;
+import com.zhangnianshuai.servicemind.application.knowledge.KnowledgePublishingService;
 import com.zhangnianshuai.servicemind.domain.knowledge.KnowledgeDocumentCategory;
 import com.zhangnianshuai.servicemind.domain.knowledge.KnowledgeDocumentStatus;
 
@@ -34,10 +36,13 @@ import jakarta.validation.Valid;
 public class KnowledgeDocumentController {
 
     private final KnowledgeDocumentService service;
+    private final KnowledgePublishingService publishingService;
 
     public KnowledgeDocumentController(
-            KnowledgeDocumentService service) {
+            KnowledgeDocumentService service,
+            KnowledgePublishingService publishingService) {
         this.service = service;
+        this.publishingService = publishingService;
     }
 
     @PostMapping
@@ -123,6 +128,20 @@ public class KnowledgeDocumentController {
             @PathVariable
             int versionNo) {
         return service.findVersion(documentNo, versionNo);
+    }
+
+    @PostMapping(
+        "/{documentNo}/versions/{versionNo}/publish"
+    )
+    public KnowledgePublishResponse publish(
+            @PathVariable
+            String documentNo,
+            @PathVariable
+            int versionNo) {
+        return publishingService.publish(
+            documentNo,
+            versionNo
+        );
     }
 
     @PostMapping("/{documentNo}/archive")

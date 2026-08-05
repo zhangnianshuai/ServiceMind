@@ -134,6 +134,10 @@ public class KnowledgeChunk {
         this.vectorStoreId = vectorStoreId;
     }
 
+    public void unlinkVectorStore() {
+        this.vectorStoreId = null;
+    }
+
     @PrePersist
     void onCreate() {
         createdAt = OffsetDateTime.now();

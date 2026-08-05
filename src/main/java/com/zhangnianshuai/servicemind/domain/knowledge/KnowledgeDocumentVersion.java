@@ -167,24 +167,34 @@ public class KnowledgeDocumentVersion {
     }
 
     public void markProcessing() {
-        if (status == KnowledgeVersionStatus.ARCHIVED
-                || status == KnowledgeVersionStatus.READY) {
+        if (status != KnowledgeVersionStatus.DRAFT
+                && status != KnowledgeVersionStatus.FAILED) {
             throw new IllegalStateException(
-                "This knowledge version cannot be processed."
+                "Only DRAFT or FAILED knowledge versions "
+                    + "can be processed."
             );
         }
 
         status = KnowledgeVersionStatus.PROCESSING;
         errorMessage = null;
+        processedAt = null;
+        publishedAt = null;
     }
 
     public void markReady(
             int chunkCount,
             String embeddingModel,
             int embeddingDimensions) {
-        if (chunkCount < 0) {
+        if (status != KnowledgeVersionStatus.PROCESSING) {
+            throw new IllegalStateException(
+                "Only PROCESSING knowledge versions "
+                    + "can be marked READY."
+            );
+        }
+
+        if (chunkCount <= 0) {
             throw new IllegalArgumentException(
-                "Chunk count must not be negative."
+                "Chunk count must be greater than zero."
             );
         }
 
@@ -209,9 +219,18 @@ public class KnowledgeDocumentVersion {
     }
 
     public void markFailed(String errorMessage) {
+        if (status == KnowledgeVersionStatus.READY
+                || status == KnowledgeVersionStatus.ARCHIVED) {
+            throw new IllegalStateException(
+                "READY or ARCHIVED knowledge versions "
+                    + "cannot be marked FAILED."
+            );
+        }
+
         this.status = KnowledgeVersionStatus.FAILED;
         this.errorMessage = normalizeOptional(errorMessage);
         this.processedAt = OffsetDateTime.now();
+        this.publishedAt = null;
     }
 
     public void archive() {
