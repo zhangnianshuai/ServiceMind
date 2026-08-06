@@ -12,20 +12,191 @@
         </div>
       </div>
 
-      <button
-        mat-icon-button
-        type="button"
-        class="refresh-button"
-        matTooltip="刷新知识文档"
-        [disabled]="isLoading()"
-        (click)="refreshDocuments()">
-        <mat-icon
-          [class.spinning]="isLoading()">
-          refresh
-        </mat-icon>
-      </button>
+      <div class="header-actions">
+        <button
+          mat-flat-button
+          type="button"
+          class="create-button"
+          [disabled]="isCreating()"
+          (click)="openCreateForm()">
+          <mat-icon>add</mat-icon>
+          新建文档
+        </button>
+
+        <button
+          mat-icon-button
+          type="button"
+          class="refresh-button"
+          matTooltip="刷新知识文档"
+          [disabled]="isLoading()"
+          (click)="refreshDocuments()">
+          <mat-icon
+            [class.spinning]="isLoading()">
+            refresh
+          </mat-icon>
+        </button>
+      </div>
     </div>
   </mat-toolbar>
+
+  @if (createSuccess()) {
+    <div class="feedback-banner success-banner">
+      <mat-icon>check_circle</mat-icon>
+      <span>{{ createSuccess() }}</span>
+    </div>
+  }
+
+  @if (showCreateForm()) {
+    <mat-card class="create-card">
+      <mat-card-content>
+        <form
+          class="create-form"
+          [formGroup]="createForm"
+          (ngSubmit)="submitCreateDocument()">
+
+          <div class="form-heading">
+            <div>
+              <h2>新建知识文档</h2>
+              <p>
+                创建文档时会同时生成第一个草稿版本。
+              </p>
+            </div>
+
+            <button
+              mat-icon-button
+              type="button"
+              matTooltip="关闭"
+              [disabled]="isCreating()"
+              (click)="cancelCreate()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+
+          <div class="form-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>文档标题</mat-label>
+
+              <input
+                matInput
+                maxlength="200"
+                formControlName="title"
+                placeholder="例如：退换货服务说明">
+
+              <mat-hint align="end">
+                {{ createForm.controls.title.value.length }}/200
+              </mat-hint>
+
+              @if (
+                createForm.controls.title.touched &&
+                createForm.controls.title.hasError('required')
+              ) {
+                <mat-error>请输入文档标题</mat-error>
+              }
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>文档分类</mat-label>
+
+              <mat-select formControlName="category">
+                @for (
+                  category of categories;
+                  track category.value
+                ) {
+                  <mat-option [value]="category.value">
+                    {{ category.label }}
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>内容格式</mat-label>
+
+              <mat-select formControlName="sourceType">
+                @for (
+                  sourceType of sourceTypes;
+                  track sourceType.value
+                ) {
+                  <mat-option [value]="sourceType.value">
+                    {{ sourceType.label }}
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>创建人</mat-label>
+
+              <input
+                matInput
+                maxlength="100"
+                formControlName="createdBy"
+                placeholder="可选，例如：admin">
+            </mat-form-field>
+
+            <mat-form-field
+              appearance="outline"
+              class="full-width">
+              <mat-label>
+                {{
+                  createForm.controls.sourceType.value
+                    === 'MARKDOWN'
+                    ? 'Markdown 内容'
+                    : '文本内容'
+                }}
+              </mat-label>
+
+              <textarea
+                matInput
+                rows="8"
+                maxlength="1000000"
+                formControlName="rawContent"
+                placeholder="请输入智能客服可以检索和引用的知识内容">
+              </textarea>
+
+              @if (
+                createForm.controls.rawContent.touched &&
+                createForm.controls.rawContent
+                  .hasError('required')
+              ) {
+                <mat-error>请输入知识文档内容</mat-error>
+              }
+            </mat-form-field>
+          </div>
+
+          @if (createError()) {
+            <div class="form-error">
+              <mat-icon>error_outline</mat-icon>
+              <span>{{ createError() }}</span>
+            </div>
+          }
+
+          <div class="form-actions">
+            <button
+              mat-button
+              type="button"
+              [disabled]="isCreating()"
+              (click)="cancelCreate()">
+              取消
+            </button>
+
+            <button
+              mat-flat-button
+              type="submit"
+              [disabled]="isCreating()">
+              @if (isCreating()) {
+                <mat-spinner diameter="20"></mat-spinner>
+                正在创建
+              } @else {
+                <mat-icon>save</mat-icon>
+                创建草稿
+              }
+            </button>
+          </div>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  }
 
   <mat-card class="table-card">
     <mat-card-content>
@@ -51,7 +222,7 @@
         <div class="state-panel">
           <mat-icon>inbox</mat-icon>
           <h3>暂无知识文档</h3>
-          <p>可以通过后端接口创建第一份知识文档。</p>
+          <p>点击“新建文档”创建第一份知识文档。</p>
         </div>
       } @else {
         <div class="table-container">
@@ -162,7 +333,10 @@
                 更新时间
               </th>
               <td mat-cell *matCellDef="let document">
-                {{ document.updatedAt | date:'yyyy-MM-dd HH:mm' }}
+                {{
+                  document.updatedAt |
+                    date:'yyyy-MM-dd HH:mm'
+                }}
               </td>
             </ng-container>
 

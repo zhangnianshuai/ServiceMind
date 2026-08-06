@@ -1,8 +1,14 @@
-import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpErrorResponse,
+  HttpParams
+} from '@angular/common/http';
 import { Injectable, inject, signal } from '@angular/core';
-import { finalize } from 'rxjs';
+import { Observable, finalize } from 'rxjs';
 
 import {
+  CreateKnowledgeDocumentRequest,
+  KnowledgeDocumentDetail,
   KnowledgeDocumentFilters,
   KnowledgeDocumentSummary
 } from '../types/knowledge-document.types';
@@ -34,11 +40,17 @@ export class KnowledgeDocumentService {
     let params = new HttpParams();
 
     if (filters.category) {
-      params = params.set('category', filters.category);
+      params = params.set(
+        'category',
+        filters.category
+      );
     }
 
     if (filters.status) {
-      params = params.set('status', filters.status);
+      params = params.set(
+        'status',
+        filters.status
+      );
     }
 
     this.loadingState.set(true);
@@ -70,9 +82,22 @@ export class KnowledgeDocumentService {
       });
   }
 
-  private resolveErrorMessage(
-    error: HttpErrorResponse
+  createDocument(
+    request: CreateKnowledgeDocumentRequest
+  ): Observable<KnowledgeDocumentDetail> {
+    return this.httpClient.post<KnowledgeDocumentDetail>(
+      this.apiUrl,
+      request
+    );
+  }
+
+  resolveErrorMessage(
+    error: unknown
   ): string {
+    if (!(error instanceof HttpErrorResponse)) {
+      return '操作失败，请稍后重试。';
+    }
+
     if (
       error.error &&
       typeof error.error === 'object'
@@ -87,8 +112,16 @@ export class KnowledgeDocumentService {
       if (typeof payload['message'] === 'string') {
         return payload['message'];
       }
+
+      if (typeof payload['title'] === 'string') {
+        return payload['title'];
+      }
     }
 
-    return '知识文档加载失败，请确认后端服务已经启动。';
+    if (error.status === 0) {
+      return '无法连接后端服务，请确认服务已经启动。';
+    }
+
+    return `操作失败，服务器返回状态码 ${error.status}。`;
   }
 }
