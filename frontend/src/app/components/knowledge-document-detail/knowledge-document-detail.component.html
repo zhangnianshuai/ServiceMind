@@ -1,0 +1,175 @@
+<mat-card class="detail-card">
+  <mat-card-content>
+    <div class="detail-header">
+      <div>
+        <h2>文档详情与版本</h2>
+        <p>{{ documentNo() }}</p>
+      </div>
+
+      <button
+        mat-icon-button
+        type="button"
+        matTooltip="关闭详情"
+        (click)="close()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    @if (isLoading() && !detail()) {
+      <div class="detail-state">
+        <mat-spinner diameter="36"></mat-spinner>
+        <p>正在加载文档详情……</p>
+      </div>
+    } @else if (errorMessage() && !detail()) {
+      <div class="detail-state error-state">
+        <mat-icon>error_outline</mat-icon>
+        <p>{{ errorMessage() }}</p>
+      </div>
+    } @else if (detail(); as document) {
+      <div class="document-summary">
+        <div>
+          <span class="summary-label">标题</span>
+          <strong>{{ document.title }}</strong>
+        </div>
+
+        <div>
+          <span class="summary-label">文档状态</span>
+          <mat-chip
+            [ngClass]="statusClass(document.status)">
+            {{ documentStatusLabel(document.status) }}
+          </mat-chip>
+        </div>
+
+        <div>
+          <span class="summary-label">最新版本</span>
+          <strong>v{{ document.latestVersionNo }}</strong>
+        </div>
+
+        <div>
+          <span class="summary-label">生效版本</span>
+          <strong>
+            @if (document.activeVersionNo !== null) {
+              v{{ document.activeVersionNo }}
+            } @else {
+              —
+            }
+          </strong>
+        </div>
+      </div>
+
+      @if (publishSuccess()) {
+        <div class="feedback success-feedback">
+          <mat-icon>check_circle</mat-icon>
+          <span>{{ publishSuccess() }}</span>
+        </div>
+      }
+
+      @if (errorMessage()) {
+        <div class="feedback error-feedback">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      <div class="version-heading">
+        <div>
+          <h3>版本记录</h3>
+          <p>只有最新的草稿版本可以发布。</p>
+        </div>
+
+        @if (canPublishLatest()) {
+          <button
+            mat-flat-button
+            type="button"
+            [disabled]="publishingVersionNo() !== null"
+            (click)="publishLatestVersion()">
+            @if (publishingVersionNo() !== null) {
+              <mat-spinner diameter="20"></mat-spinner>
+              正在发布
+            } @else {
+              <mat-icon>publish</mat-icon>
+              发布最新版本
+            }
+          </button>
+        }
+      </div>
+
+      <div class="version-list">
+        @for (
+          version of document.versions;
+          track version.versionNo
+        ) {
+          <div class="version-item">
+            <div class="version-primary">
+              <div class="version-title">
+                <strong>v{{ version.versionNo }}</strong>
+
+                @if (isLatestVersion(version)) {
+                  <span class="version-badge latest-badge">
+                    最新
+                  </span>
+                }
+
+                @if (isActiveVersion(version)) {
+                  <span class="version-badge active-badge">
+                    当前生效
+                  </span>
+                }
+              </div>
+
+              <span class="version-source">
+                {{ sourceTypeLabel(version) }}
+
+                @if (version.originalFilename) {
+                  · {{ version.originalFilename }}
+                }
+              </span>
+            </div>
+
+            <div class="version-metadata">
+              <mat-chip
+                [ngClass]="statusClass(version.status)">
+                {{ versionStatusLabel(version.status) }}
+              </mat-chip>
+
+              <span>
+                切块：{{ version.chunkCount }}
+              </span>
+
+              <span>
+                创建：
+                {{
+                  version.createdAt |
+                    date:'yyyy-MM-dd HH:mm'
+                }}
+              </span>
+
+              @if (version.publishedAt) {
+                <span>
+                  发布：
+                  {{
+                    version.publishedAt |
+                      date:'yyyy-MM-dd HH:mm'
+                  }}
+                </span>
+              }
+            </div>
+
+            @if (version.embeddingModel) {
+              <div class="embedding-info">
+                {{ version.embeddingModel }}
+                · {{ version.embeddingDimensions }} 维
+              </div>
+            }
+
+            @if (version.errorMessage) {
+              <div class="version-error">
+                {{ version.errorMessage }}
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </mat-card-content>
+</mat-card>

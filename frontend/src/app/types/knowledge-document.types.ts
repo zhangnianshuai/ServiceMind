@@ -73,3 +73,14 @@ export interface CreateKnowledgeDocumentRequest {
   rawContent: string;
   createdBy: string | null;
 }
+export interface KnowledgePublishResponse {
+  documentNo: string;
+  versionNo: number;
+  documentStatus: KnowledgeDocumentStatus;
+  versionStatus: KnowledgeVersionStatus;
+  chunkCount: number;
+  embeddingModel: string;
+  embeddingDimensions: number;
+  processedAt: string;
+  publishedAt: string;
+}

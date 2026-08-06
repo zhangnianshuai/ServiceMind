@@ -198,6 +198,14 @@
     </mat-card>
   }
 
+  @if (selectedDocumentNo(); as documentNo) {
+    <app-knowledge-document-detail
+      [documentNo]="documentNo"
+      (closed)="closeDocumentDetail()"
+      (documentChanged)="onDocumentChanged()">
+    </app-knowledge-document-detail>
+  }
+
   <mat-card class="table-card">
     <mat-card-content>
       @if (isLoading() && documents().length === 0) {
@@ -337,6 +345,24 @@
                   document.updatedAt |
                     date:'yyyy-MM-dd HH:mm'
                 }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th
+                mat-header-cell
+                *matHeaderCellDef>
+                操作
+              </th>
+
+              <td mat-cell *matCellDef="let document">
+                <button
+                  mat-icon-button
+                  type="button"
+                  matTooltip="查看版本"
+                  (click)="openDocumentDetail(document)">
+                  <mat-icon>visibility</mat-icon>
+                </button>
               </td>
             </ng-container>
 

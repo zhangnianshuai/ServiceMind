@@ -10,7 +10,8 @@ import {
   CreateKnowledgeDocumentRequest,
   KnowledgeDocumentDetail,
   KnowledgeDocumentFilters,
-  KnowledgeDocumentSummary
+  KnowledgeDocumentSummary,
+  KnowledgePublishResponse
 } from '../types/knowledge-document.types';
 
 @Injectable({
@@ -88,6 +89,25 @@ export class KnowledgeDocumentService {
     return this.httpClient.post<KnowledgeDocumentDetail>(
       this.apiUrl,
       request
+    );
+  }
+
+  findDocument(
+    documentNo: string
+  ): Observable<KnowledgeDocumentDetail> {
+    return this.httpClient.get<KnowledgeDocumentDetail>(
+      `${this.apiUrl}/${encodeURIComponent(documentNo)}`
+    );
+  }
+
+  publishVersion(
+    documentNo: string,
+    versionNo: number
+  ): Observable<KnowledgePublishResponse> {
+    return this.httpClient.post<KnowledgePublishResponse>(
+      `${this.apiUrl}/${encodeURIComponent(documentNo)}` +
+        `/versions/${versionNo}/publish`,
+      {}
     );
   }
 

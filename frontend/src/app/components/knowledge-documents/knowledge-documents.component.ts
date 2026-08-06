@@ -41,6 +41,9 @@ import {
   KnowledgeDocumentService
 } from '../../services/knowledge-document.service';
 import {
+  KnowledgeDocumentDetailComponent
+} from '../knowledge-document-detail/knowledge-document-detail.component';
+import {
   CreateKnowledgeDocumentRequest,
   KnowledgeDocumentCategory,
   KnowledgeDocumentStatus,
@@ -65,7 +68,8 @@ import {
     MatProgressSpinnerModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule
+    MatSelectModule,
+    KnowledgeDocumentDetailComponent
   ],
   templateUrl:
     './knowledge-documents.component.html',
@@ -96,6 +100,7 @@ export class KnowledgeDocumentsComponent
   readonly isCreating = signal(false);
   readonly createError = signal<string | null>(null);
   readonly createSuccess = signal<string | null>(null);
+  readonly selectedDocumentNo = signal<string | null>(null);
 
   readonly categories: ReadonlyArray<{
     value: KnowledgeDocumentCategory;
@@ -126,7 +131,8 @@ export class KnowledgeDocumentsComponent
     'latestVersionNo',
     'activeVersionNo',
     'createdBy',
-    'updatedAt'
+    'updatedAt',
+    'actions'
   ];
 
   readonly dataSource =
@@ -174,6 +180,20 @@ export class KnowledgeDocumentsComponent
 
   refreshDocuments(): void {
     this.knowledgeDocumentService.refreshDocuments();
+  }
+
+  openDocumentDetail(
+    document: KnowledgeDocumentSummary
+  ): void {
+    this.selectedDocumentNo.set(document.documentNo);
+  }
+
+  closeDocumentDetail(): void {
+    this.selectedDocumentNo.set(null);
+  }
+
+  onDocumentChanged(): void {
+    this.refreshDocuments();
   }
 
   openCreateForm(): void {
