@@ -200,3 +200,55 @@ mat-chip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+.upload-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  margin-top: 1rem;
+  padding: 0.85rem;
+  border: 1px dashed #93c5fd;
+  border-radius: 8px;
+  background: #eff6ff;
+}
+
+.upload-description {
+  h3 {
+    margin: 0;
+    color: #1e3a8a;
+    font-size: 1rem;
+  }
+
+  p {
+    margin: 0.25rem 0 0;
+    color: #64748b;
+    font-size: 0.8rem;
+  }
+}
+
+.upload-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+}
+
+.selected-filename {
+  min-width: 150px;
+  max-width: 280px;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  &.file-selected {
+    color: #1e40af;
+    font-weight: 600;
+  }
+}

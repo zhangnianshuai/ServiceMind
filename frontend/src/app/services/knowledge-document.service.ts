@@ -11,7 +11,8 @@ import {
   KnowledgeDocumentDetail,
   KnowledgeDocumentFilters,
   KnowledgeDocumentSummary,
-  KnowledgePublishResponse
+  KnowledgePublishResponse,
+  KnowledgeVersionDetail
 } from '../types/knowledge-document.types';
 
 @Injectable({
@@ -108,6 +109,25 @@ export class KnowledgeDocumentService {
       `${this.apiUrl}/${encodeURIComponent(documentNo)}` +
         `/versions/${versionNo}/publish`,
       {}
+    );
+  }
+
+  uploadVersion(
+    documentNo: string,
+    file: File
+  ): Observable<KnowledgeVersionDetail> {
+    const formData = new FormData();
+
+    formData.append(
+      'file',
+      file,
+      file.name
+    );
+
+    return this.httpClient.post<KnowledgeVersionDetail>(
+      `${this.apiUrl}/${encodeURIComponent(documentNo)}` +
+        '/versions/upload',
+      formData
     );
   }
 

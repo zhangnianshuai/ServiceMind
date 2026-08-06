@@ -84,3 +84,8 @@ export interface KnowledgePublishResponse {
   processedAt: string;
   publishedAt: string;
 }
+export interface KnowledgeVersionDetail
+  extends KnowledgeVersionSummary {
+  documentNo: string;
+  rawContent: string;
+}

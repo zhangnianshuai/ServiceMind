@@ -71,6 +71,69 @@
         </div>
       }
 
+      @if (uploadSuccess()) {
+        <div class="feedback success-feedback">
+          <mat-icon>check_circle</mat-icon>
+          <span>{{ uploadSuccess() }}</span>
+        </div>
+      }
+
+      @if (document.status !== 'ARCHIVED') {
+        <div class="upload-panel">
+          <div class="upload-description">
+            <h3>上传新版本</h3>
+            <p>
+              支持 UTF-8 编码的 TXT、MD 和 MARKDOWN 文件，
+              最大 2 MB。上传后先保存为草稿。
+            </p>
+          </div>
+
+          <div class="upload-controls">
+            <input
+              #versionFileInput
+              type="file"
+              hidden
+              accept=".txt,.md,.markdown,text/plain,text/markdown"
+              (change)="onFileSelected($event)">
+
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="isUploading()"
+              (click)="versionFileInput.click()">
+              <mat-icon>attach_file</mat-icon>
+              选择文件
+            </button>
+
+            <span
+              class="selected-filename"
+              [class.file-selected]="selectedFile()">
+              {{
+                selectedFile()?.name ||
+                  '尚未选择文件'
+              }}
+            </span>
+
+            <button
+              mat-flat-button
+              type="button"
+              [disabled]="
+                !selectedFile() ||
+                isUploading()
+              "
+              (click)="uploadSelectedFile()">
+              @if (isUploading()) {
+                <mat-spinner diameter="20"></mat-spinner>
+                正在上传
+              } @else {
+                <mat-icon>cloud_upload</mat-icon>
+                上传为新版本
+              }
+            </button>
+          </div>
+        </div>
+      }
+
       <div class="version-heading">
         <div>
           <h3>版本记录</h3>

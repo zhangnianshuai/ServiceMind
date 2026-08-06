@@ -2,10 +2,12 @@ import {
   Component,
   computed,
   effect,
+  ElementRef,
   inject,
   input,
   output,
-  signal
+  signal,
+  ViewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
@@ -47,6 +49,9 @@ import {
     './knowledge-document-detail.component.scss'
 })
 export class KnowledgeDocumentDetailComponent {
+  @ViewChild('versionFileInput')
+  private versionFileInput?: ElementRef<HTMLInputElement>;
+
   readonly documentNo = input.required<string>();
 
   readonly closed = output<void>();
@@ -62,6 +67,10 @@ export class KnowledgeDocumentDetailComponent {
   readonly errorMessage = signal<string | null>(null);
   readonly publishSuccess = signal<string | null>(null);
   readonly publishingVersionNo = signal<number | null>(null);
+
+  readonly selectedFile = signal<File | null>(null);
+  readonly isUploading = signal(false);
+  readonly uploadSuccess = signal<string | null>(null);
 
   readonly latestVersion = computed(() => {
     const document = this.detail();
@@ -99,6 +108,113 @@ export class KnowledgeDocumentDetailComponent {
 
   close(): void {
     this.closed.emit();
+  }
+
+  onFileSelected(
+    event: Event
+  ): void {
+    const input =
+      event.target as HTMLInputElement;
+
+    const file =
+      input.files?.item(0) ?? null;
+
+    this.errorMessage.set(null);
+    this.uploadSuccess.set(null);
+
+    if (!file) {
+      this.selectedFile.set(null);
+      return;
+    }
+
+    const filename = file.name.toLowerCase();
+
+    const supportedExtension =
+      filename.endsWith('.txt') ||
+      filename.endsWith('.md') ||
+      filename.endsWith('.markdown');
+
+    if (!supportedExtension) {
+      this.selectedFile.set(null);
+      input.value = '';
+      this.errorMessage.set(
+        '只支持 TXT、MD 和 MARKDOWN 文件。'
+      );
+      return;
+    }
+
+    if (file.size <= 0) {
+      this.selectedFile.set(null);
+      input.value = '';
+      this.errorMessage.set(
+        '上传文件不能为空。'
+      );
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      this.selectedFile.set(null);
+      input.value = '';
+      this.errorMessage.set(
+        '上传文件不能超过 2 MB。'
+      );
+      return;
+    }
+
+    this.selectedFile.set(file);
+  }
+
+  uploadSelectedFile(): void {
+    const document = this.detail();
+    const file = this.selectedFile();
+
+    if (!document || !file) {
+      return;
+    }
+
+    if (document.status === 'ARCHIVED') {
+      this.errorMessage.set(
+        '已归档文档不能上传新版本。'
+      );
+      return;
+    }
+
+    this.isUploading.set(true);
+    this.errorMessage.set(null);
+    this.uploadSuccess.set(null);
+    this.publishSuccess.set(null);
+
+    this.knowledgeDocumentService
+      .uploadVersion(
+        document.documentNo,
+        file
+      )
+      .pipe(
+        finalize(() => this.isUploading.set(false))
+      )
+      .subscribe({
+        next: version => {
+          this.uploadSuccess.set(
+            `文件“${file.name}”已上传为草稿版本 ` +
+              `v${version.versionNo}。`
+          );
+
+          this.selectedFile.set(null);
+
+          if (this.versionFileInput) {
+            this.versionFileInput.nativeElement.value = '';
+          }
+
+          this.loadDocument(document.documentNo);
+          this.documentChanged.emit();
+        },
+        error: error => {
+          this.errorMessage.set(
+            this.knowledgeDocumentService
+              .resolveErrorMessage(error)
+          );
+        }
+      });
   }
 
   publishLatestVersion(): void {
