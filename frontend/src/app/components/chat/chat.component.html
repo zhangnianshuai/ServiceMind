@@ -2,7 +2,7 @@
   <div class="chat-header">
     <div class="chat-title">
       <mat-icon class="chat-icon">support_agent</mat-icon>
-      <h2>SpringFly Concierge</h2>
+      <h2>ServiceMind 智能客服</h2>
     </div>
   </div>
 
@@ -19,7 +19,7 @@
 
         <div class="message-content">
           <div class="message-header">
-            <span class="sender-name">{{ message.isUser ? 'You' : 'Assistant' }}</span>
+            <span class="sender-name">{{ message.isUser ? '你' : 'ServiceMind' }}</span>
             <span class="message-time">{{ message.timestamp | date:'short' }}</span>
           </div>
 
@@ -39,13 +39,13 @@
         </div>
         <div class="message-content">
           <div class="message-header">
-            <span class="sender-name">Assistant</span>
+            <span class="sender-name">ServiceMind</span>
           </div>
           <mat-card class="message-card loading-card">
             <mat-card-content>
               <div class="loading-indicator">
                 <mat-spinner diameter="20"></mat-spinner>
-                <span>Thinking...</span>
+                <span>正在思考……</span>
               </div>
             </mat-card-content>
           </mat-card>
@@ -61,7 +61,7 @@
         matInput
         [(ngModel)]="currentMessage"
         (keypress)="onKeyPress($event)"
-        placeholder="Type your message here..."
+        placeholder="请输入订单、售后或产品相关问题……"
         [disabled]="isLoading()">
       <mat-icon matSuffix>chat</mat-icon>
     </mat-form-field>

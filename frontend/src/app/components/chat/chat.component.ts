@@ -46,7 +46,7 @@ export class ChatComponent {
   messages = signal<Message[]>([
     {
       id: '1',
-      content: 'Hello, how can I help you today? 😊✈️',
+      content: '您好，我是 ServiceMind 智能客服，请问有什么可以帮助您？',
       isUser: false,
       timestamp: new Date(),
     }
@@ -102,7 +102,7 @@ export class ChatComponent {
         // Fallback message if API fails
         const errorResponse: Message = {
           id: (Date.now() + 1).toString(),
-          content: 'Sorry, I\'m having trouble connecting right now. Please try again in a moment.',
+          content: '暂时无法连接智能客服服务，请确认后端已经启动后重试。',
           isUser: false,
           timestamp: new Date()
         };
