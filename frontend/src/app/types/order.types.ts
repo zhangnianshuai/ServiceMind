@@ -1,0 +1,30 @@
+export type OrderStatus =
+  | 'CREATED'
+  | 'PAID'
+  | 'SHIPPED'
+  | 'COMPLETED'
+  | 'CANCELLED';
+
+export interface OrderItem {
+  sku: string;
+  productName: string;
+  unitPrice: number;
+  quantity: number;
+  lineAmount: number;
+}
+
+export interface OrderSummary {
+  orderNo: string;
+  customerNo: string;
+  customerName: string;
+  status: OrderStatus;
+  totalAmount: number;
+  orderedAt: string;
+}
+
+export interface OrderDetail extends OrderSummary {
+  paidAt: string | null;
+  shippedAt: string | null;
+  completedAt: string | null;
+  items: OrderItem[];
+}
