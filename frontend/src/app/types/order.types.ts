@@ -6,6 +6,7 @@ export type OrderStatus =
   | 'CANCELLED';
 
 export interface OrderItem {
+  orderItemId: number;
   sku: string;
   productName: string;
   unitPrice: number;

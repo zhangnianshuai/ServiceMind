@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import com.zhangnianshuai.servicemind.domain.order.OrderItem;
 
 public record OrderItemResponse(
+    Long orderItemId,
     String sku,
     String productName,
     BigDecimal unitPrice,
@@ -14,6 +15,7 @@ public record OrderItemResponse(
 
     public static OrderItemResponse from(OrderItem item) {
         return new OrderItemResponse(
+            item.getId(),
             item.getSkuSnapshot(),
             item.getProductNameSnapshot(),
             item.getUnitPrice(),
