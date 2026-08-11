@@ -8,21 +8,33 @@ import org.springframework.stereotype.Service;
 
 import com.zhangnianshuai.servicemind.agents.ServiceMindAgent;
 import com.zhangnianshuai.servicemind.application.model.ByokChatService;
+import com.zhangnianshuai.servicemind.security.PublicDemoUsageGuard;
 
 @Service
 public class ChatService {
 
     private static final Logger log =
-        LoggerFactory.getLogger(ChatService.class);
+        LoggerFactory.getLogger(
+            ChatService.class
+        );
 
     private final ServiceMindAgent serviceMindAgent;
     private final ByokChatService byokChatService;
+    private final PublicDemoUsageGuard usageGuard;
 
     public ChatService(
             ServiceMindAgent serviceMindAgent,
-            ByokChatService byokChatService) {
-        this.serviceMindAgent = serviceMindAgent;
-        this.byokChatService = byokChatService;
+            ByokChatService byokChatService,
+            PublicDemoUsageGuard usageGuard) {
+
+        this.serviceMindAgent =
+            serviceMindAgent;
+
+        this.byokChatService =
+            byokChatService;
+
+        this.usageGuard =
+            usageGuard;
 
         log.info(
             "ChatService initialized with platform and BYOK modes"
@@ -30,10 +42,17 @@ public class ChatService {
     }
 
     public String chat(
+            String username,
             String chatId,
             String userMessage,
             UUID modelSessionId) {
+
         if (modelSessionId == null) {
+
+            usageGuard.checkPlatformChat(
+                username
+            );
+
             log.info(
                 "Processing chat {} using platform credentials",
                 chatId
@@ -45,21 +64,20 @@ public class ChatService {
             );
         }
 
+        usageGuard.checkByokChat(
+            username
+        );
+
         log.info(
             "Processing chat {} using user model session",
             chatId
         );
 
         return byokChatService.chat(
+            username,
             modelSessionId,
             chatId,
             userMessage
         );
-    }
-
-    public String chat(
-            String chatId,
-            String userMessage) {
-        return chat(chatId, userMessage, null);
     }
 }

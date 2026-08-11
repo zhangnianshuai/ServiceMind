@@ -1,0 +1,217 @@
+<div class="login-page">
+
+  <section class="login-intro">
+
+    <div class="brand-mark">
+      <mat-icon>support_agent</mat-icon>
+    </div>
+
+    <div class="intro-copy">
+
+      <span class="eyebrow">
+        ServiceMind
+      </span>
+
+      <h1>
+        智能客服业务工作台
+      </h1>
+
+      <p>
+        统一连接订单、售后、客服工单、
+        企业知识库与智能客服能力。
+      </p>
+
+    </div>
+
+    <div class="capability-list">
+
+      <div class="capability">
+        <mat-icon>verified_user</mat-icon>
+
+        <div>
+          <strong>角色权限控制</strong>
+          <span>
+            ADMIN 与 AGENT 分级访问
+          </span>
+        </div>
+      </div>
+
+      <div class="capability">
+        <mat-icon>smart_toy</mat-icon>
+
+        <div>
+          <strong>智能业务查询</strong>
+          <span>
+            AI 联动订单、售后、工单与知识
+          </span>
+        </div>
+      </div>
+
+      <div class="capability">
+        <mat-icon>key</mat-icon>
+
+        <div>
+          <strong>平台模型与 BYOK</strong>
+          <span>
+            支持临时用户模型会话
+          </span>
+        </div>
+      </div>
+
+    </div>
+
+  </section>
+
+
+  <section class="login-form-area">
+
+    <div class="login-card">
+
+      <div class="login-card-header">
+
+        <span class="login-badge">
+          企业工作台
+        </span>
+
+        <h2>
+          登录 ServiceMind
+        </h2>
+
+        <p>
+          使用客服坐席或管理员账号进入系统。
+        </p>
+
+      </div>
+
+      <form
+        [formGroup]="form"
+        (ngSubmit)="submit()">
+
+        <mat-form-field
+          appearance="outline"
+          class="field">
+
+          <mat-label>
+            用户名
+          </mat-label>
+
+          <mat-icon matPrefix>
+            person
+          </mat-icon>
+
+          <input
+            matInput
+            formControlName="username"
+            autocomplete="username"
+            placeholder="请输入用户名">
+
+          @if (
+            form.controls.username.touched &&
+            form.controls.username.invalid
+          ) {
+            <mat-error>
+              请输入有效用户名
+            </mat-error>
+          }
+
+        </mat-form-field>
+
+
+        <mat-form-field
+          appearance="outline"
+          class="field">
+
+          <mat-label>
+            密码
+          </mat-label>
+
+          <mat-icon matPrefix>
+            lock
+          </mat-icon>
+
+          <input
+            matInput
+            formControlName="password"
+            autocomplete="current-password"
+            [type]="
+              showPassword()
+                ? 'text'
+                : 'password'
+            "
+            placeholder="请输入密码">
+
+          <button
+            mat-icon-button
+            matSuffix
+            type="button"
+            class="password-toggle"
+            (click)="togglePassword()">
+
+            <mat-icon>
+              {{
+                showPassword()
+                  ? 'visibility_off'
+                  : 'visibility'
+              }}
+            </mat-icon>
+
+          </button>
+
+          @if (
+            form.controls.password.touched &&
+            form.controls.password.invalid
+          ) {
+            <mat-error>
+              请输入密码
+            </mat-error>
+          }
+
+        </mat-form-field>
+
+
+        @if (errorMessage()) {
+
+          <div class="login-error">
+            <mat-icon>error_outline</mat-icon>
+            <span>
+              {{ errorMessage() }}
+            </span>
+          </div>
+
+        }
+
+
+        <button
+          class="login-button"
+          type="submit"
+          [disabled]="submitting()">
+
+          @if (submitting()) {
+            <span class="spinner"></span>
+            <span>正在登录...</span>
+          }
+          @else {
+            <mat-icon>login</mat-icon>
+            <span>进入工作台</span>
+          }
+
+        </button>
+
+      </form>
+
+
+      <div class="security-note">
+
+        <mat-icon>shield</mat-icon>
+
+        <span>
+          Session · CSRF · Role Based Access Control
+        </span>
+
+      </div>
+
+    </div>
+
+  </section>
+
+</div>

@@ -2,6 +2,7 @@ package com.zhangnianshuai.servicemind.api.chat;
 
 import java.util.UUID;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -22,7 +23,8 @@ public class CustomerSupportController {
 
     private final ChatService chatService;
 
-    public CustomerSupportController(ChatService chatService) {
+    public CustomerSupportController(
+            ChatService chatService) {
         this.chatService = chatService;
     }
 
@@ -30,14 +32,21 @@ public class CustomerSupportController {
     public ChatResponse chat(
             @Valid
             @RequestBody
-            ChatRequest request) {
-        String chatId = resolveChatId(request.chatId());
+            ChatRequest request,
+            Authentication authentication) {
 
-        String response = chatService.chat(
-            chatId,
-            request.text().trim(),
-            request.modelSessionId()
-        );
+        String chatId =
+            resolveChatId(
+                request.chatId()
+            );
+
+        String response =
+            chatService.chat(
+                authentication.getName(),
+                chatId,
+                request.text().trim(),
+                request.modelSessionId()
+            );
 
         String credentialSource =
             request.modelSessionId() == null
@@ -51,11 +60,16 @@ public class CustomerSupportController {
         );
     }
 
-    private String resolveChatId(String requestedChatId) {
-        if (StringUtils.hasText(requestedChatId)) {
+    private String resolveChatId(
+            String requestedChatId) {
+
+        if (StringUtils.hasText(
+                requestedChatId)) {
+
             return requestedChatId.trim();
         }
 
-        return UUID.randomUUID().toString();
+        return UUID.randomUUID()
+            .toString();
     }
 }

@@ -3,6 +3,7 @@ package com.zhangnianshuai.servicemind.api.model;
 import java.util.UUID;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -27,7 +28,8 @@ public class ModelSessionController {
 
     public ModelSessionController(
             ModelSessionService modelSessionService) {
-        this.modelSessionService = modelSessionService;
+        this.modelSessionService =
+            modelSessionService;
     }
 
     @PostMapping
@@ -35,14 +37,24 @@ public class ModelSessionController {
     public ModelSessionResponse createSession(
             @Valid
             @RequestBody
-            CreateModelSessionRequest request) {
-        return modelSessionService.createSession(request);
+            CreateModelSessionRequest request,
+            Authentication authentication) {
+
+        return modelSessionService.createSession(
+            authentication.getName(),
+            request
+        );
     }
 
     @DeleteMapping("/{sessionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void revokeSession(
-            @PathVariable UUID sessionId) {
-        modelSessionService.revokeSession(sessionId);
+            @PathVariable UUID sessionId,
+            Authentication authentication) {
+
+        modelSessionService.revokeSession(
+            authentication.getName(),
+            sessionId
+        );
     }
 }

@@ -1,0 +1,127 @@
+<div class="app-shell">
+  <aside class="sidebar">
+
+    <div class="brand">
+      <div class="brand-logo">
+        <mat-icon>support_agent</mat-icon>
+      </div>
+
+      <div class="brand-text">
+        <strong>ServiceMind</strong>
+        <span>智能客服工作台</span>
+      </div>
+    </div>
+
+    <nav class="navigation">
+
+      <a
+        routerLink="/knowledge"
+        routerLinkActive="active"
+        class="nav-item"
+        matTooltip="知识库管理">
+
+        <mat-icon>menu_book</mat-icon>
+
+        <div>
+          <strong>知识库</strong>
+          <span>知识与版本管理</span>
+        </div>
+      </a>
+
+      <div class="nav-divider">
+        客服业务
+      </div>
+
+      <a
+        routerLink="/orders"
+        routerLinkActive="active"
+        class="nav-item"
+        matTooltip="订单中心">
+
+        <mat-icon>receipt_long</mat-icon>
+
+        <div>
+          <strong>订单</strong>
+          <span>订单查询与管理</span>
+        </div>
+      </a>
+
+      <a
+        routerLink="/after-sales"
+        routerLinkActive="active"
+        class="nav-item"
+        matTooltip="售后中心">
+
+        <mat-icon>assignment_return</mat-icon>
+
+        <div>
+          <strong>售后</strong>
+          <span>退换货与维修管理</span>
+        </div>
+      </a>
+
+      <a
+        routerLink="/tickets"
+        routerLinkActive="active"
+        class="nav-item"
+        matTooltip="客服工单">
+
+        <mat-icon>confirmation_number</mat-icon>
+
+        <div>
+          <strong>工单</strong>
+          <span>客服问题处理</span>
+        </div>
+      </a>
+
+    </nav>
+
+    <div class="sidebar-footer">
+
+      <div class="system-status">
+
+        <span class="status-dot"></span>
+
+        <div>
+          <strong>
+            {{
+              auth.currentUser()?.displayName
+            }}
+          </strong>
+
+          <span>
+            {{ roleLabel() }}
+          </span>
+        </div>
+
+        <button
+          type="button"
+          class="logout-button"
+          matTooltip="退出登录"
+          [disabled]="loggingOut()"
+          (click)="logout()">
+
+          <mat-icon>
+            logout
+          </mat-icon>
+
+        </button>
+
+      </div>
+
+    </div>
+
+  </aside>
+
+  <main class="workspace">
+
+    <section class="page-content">
+      <router-outlet></router-outlet>
+    </section>
+
+    <aside class="assistant-panel">
+      <app-chat></app-chat>
+    </aside>
+
+  </main>
+</div>

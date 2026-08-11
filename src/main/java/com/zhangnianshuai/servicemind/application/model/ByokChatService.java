@@ -15,33 +15,51 @@ public class ByokChatService {
     public ByokChatService(
             ModelSessionStore sessionStore,
             ByokChatClientFactory chatClientFactory) {
-        this.sessionStore = sessionStore;
-        this.chatClientFactory = chatClientFactory;
+
+        this.sessionStore =
+            sessionStore;
+
+        this.chatClientFactory =
+            chatClientFactory;
     }
 
     public String chat(
+            String username,
             UUID modelSessionId,
             String chatId,
             String userMessage) {
+
         ModelSessionCredential credential =
-            sessionStore.getRequired(modelSessionId);
+            sessionStore.getRequired(
+                modelSessionId,
+                username
+            );
 
         ChatClient chatClient =
-            chatClientFactory.create(credential);
+            chatClientFactory.create(
+                credential
+            );
 
-        String conversationId = chatId
-            + "-byok-"
-            + modelSessionId;
+        String conversationId =
+            chatId
+                + "-byok-"
+                + modelSessionId;
 
-        String response = chatClient.prompt()
-            .user(userMessage)
-            .advisors(advisor -> advisor.param(
-                ChatMemory.CONVERSATION_ID,
-                conversationId
-            ))
-            .call()
-            .content();
+        String response =
+            chatClient.prompt()
+                .user(userMessage)
+                .advisors(
+                    advisor ->
+                        advisor.param(
+                            ChatMemory.CONVERSATION_ID,
+                            conversationId
+                        )
+                )
+                .call()
+                .content();
 
-        return response == null ? "" : response;
+        return response == null
+            ? ""
+            : response;
     }
 }

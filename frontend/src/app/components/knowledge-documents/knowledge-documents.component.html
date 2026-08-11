@@ -17,6 +17,7 @@
           mat-flat-button
           type="button"
           class="create-button"
+          *appAdminOnly
           [disabled]="isCreating()"
           (click)="openCreateForm()">
           <mat-icon>add</mat-icon>
@@ -50,7 +51,9 @@
   }
 
   @if (showCreateForm()) {
-    <mat-card class="create-card">
+    <mat-card
+      class="create-card"
+      *appAdminOnly>
       <mat-card-content>
         <form
           class="create-form"

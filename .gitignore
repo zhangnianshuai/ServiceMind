@@ -44,3 +44,15 @@ build/
 .Trashes
 ehthumbs.db
 Thumbs.db
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+application-local.properties
+public-safety-source.txt
+db-schema-current.txt
+auth-session-test-source.txt
+role-ui-contract.txt

@@ -69,7 +69,9 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             CsrfTokenRepository csrfTokenRepository,
-            SecurityContextRepository securityContextRepository)
+            SecurityContextRepository securityContextRepository,
+            ApiAuthenticationEntryPoint authenticationEntryPoint,
+            ApiAccessDeniedHandler accessDeniedHandler)
             throws Exception {
 
         CsrfTokenRequestAttributeHandler
@@ -110,12 +112,10 @@ public class SecurityConfig {
             )
             .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint(
-                    (request, response, exception) ->
-                        response.sendError(401)
+                    authenticationEntryPoint
                 )
                 .accessDeniedHandler(
-                    (request, response, exception) ->
-                        response.sendError(403)
+                    accessDeniedHandler
                 )
             )
             .authorizeHttpRequests(auth -> auth
@@ -230,5 +230,23 @@ public class SecurityConfig {
             );
 
         return http.build();
+    }
+
+    @Bean
+    SecurityProblemWriter securityProblemWriter(
+            com.fasterxml.jackson.databind.ObjectMapper objectMapper) {
+        return new SecurityProblemWriter(objectMapper);
+    }
+
+    @Bean
+    ApiAuthenticationEntryPoint apiAuthenticationEntryPoint(
+            SecurityProblemWriter problemWriter) {
+        return new ApiAuthenticationEntryPoint(problemWriter);
+    }
+
+    @Bean
+    ApiAccessDeniedHandler apiAccessDeniedHandler(
+            SecurityProblemWriter problemWriter) {
+        return new ApiAccessDeniedHandler(problemWriter);
     }
 }

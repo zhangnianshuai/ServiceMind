@@ -38,6 +38,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
 import {
+  AdminOnlyDirective
+} from '../../directives/admin-only.directive';
+
+import {
   KnowledgeDocumentService
 } from '../../services/knowledge-document.service';
 import {
@@ -73,7 +77,8 @@ import {
     MatInputModule,
     MatSelectModule,
     KnowledgeDocumentDetailComponent,
-    KnowledgeSearchComponent
+    KnowledgeSearchComponent,
+    AdminOnlyDirective
   ],
   templateUrl:
     './knowledge-documents.component.html',

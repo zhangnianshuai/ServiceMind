@@ -32,6 +32,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
 import {
+  AdminOnlyDirective
+} from '../../directives/admin-only.directive';
+
+import {
   KnowledgeDocumentService
 } from '../../services/knowledge-document.service';
 import {
@@ -55,7 +59,8 @@ import {
     ReactiveFormsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatSelectModule
+    MatSelectModule,
+    AdminOnlyDirective
   ],
   templateUrl:
     './knowledge-document-detail.component.html',
