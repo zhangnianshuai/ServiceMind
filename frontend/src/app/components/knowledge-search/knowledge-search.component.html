@@ -1,0 +1,191 @@
+<mat-card class="search-card">
+  <mat-card-content>
+    <div class="search-header">
+      <div class="search-title">
+        <mat-icon>manage_search</mat-icon>
+
+        <div>
+          <h2>知识检索验证</h2>
+          <p>直接测试已发布知识的向量检索结果</p>
+        </div>
+      </div>
+
+      <button
+        mat-icon-button
+        type="button"
+        [attr.aria-label]="
+          expanded() ? '收起知识检索' : '展开知识检索'
+        "
+        (click)="toggleExpanded()">
+        <mat-icon>
+          {{ expanded() ? 'expand_less' : 'expand_more' }}
+        </mat-icon>
+      </button>
+    </div>
+
+    @if (expanded()) {
+      <form
+        class="search-form"
+        [formGroup]="searchForm"
+        (ngSubmit)="search()">
+
+        <mat-form-field
+          appearance="outline"
+          class="query-field">
+          <mat-label>检索问题</mat-label>
+
+          <input
+            matInput
+            maxlength="500"
+            formControlName="query"
+            placeholder="例如：超过退换货期限后如何处理？">
+
+          <mat-icon matSuffix>search</mat-icon>
+
+          @if (
+            searchForm.controls.query.touched &&
+            searchForm.controls.query.hasError('required')
+          ) {
+            <mat-error>请输入检索问题</mat-error>
+          }
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>知识分类</mat-label>
+
+          <mat-select formControlName="category">
+            <mat-option value="">
+              全部分类
+            </mat-option>
+
+            @for (
+              category of categories;
+              track category.value
+            ) {
+              <mat-option [value]="category.value">
+                {{ category.label }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>返回数量</mat-label>
+
+          <input
+            matInput
+            type="number"
+            min="1"
+            max="20"
+            formControlName="topK">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>相似度阈值</mat-label>
+
+          <input
+            matInput
+            type="number"
+            min="0"
+            max="1"
+            step="0.05"
+            formControlName="similarityThreshold">
+        </mat-form-field>
+
+        <div class="search-actions">
+          <button
+            mat-button
+            type="button"
+            [disabled]="isSearching()"
+            (click)="clear()">
+            清空
+          </button>
+
+          <button
+            mat-flat-button
+            type="submit"
+            [disabled]="isSearching()">
+            @if (isSearching()) {
+              <mat-spinner diameter="20"></mat-spinner>
+              正在检索
+            } @else {
+              <mat-icon>search</mat-icon>
+              开始检索
+            }
+          </button>
+        </div>
+      </form>
+
+      @if (errorMessage()) {
+        <div class="search-feedback error-feedback">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ errorMessage() }}</span>
+        </div>
+      }
+
+      @if (result(); as searchResult) {
+        <div class="result-summary">
+          <span>
+            查询：
+            <strong>{{ searchResult.query }}</strong>
+          </span>
+
+          <span>
+            命中：
+            <strong>{{ searchResult.resultCount }}</strong>
+          </span>
+
+          <span>
+            阈值：
+            <strong>
+              {{ searchResult.similarityThreshold }}
+            </strong>
+          </span>
+        </div>
+
+        @if (searchResult.hits.length === 0) {
+          <div class="empty-results">
+            <mat-icon>search_off</mat-icon>
+            <p>没有找到达到当前相似度阈值的知识内容。</p>
+          </div>
+        } @else {
+          <div class="result-list">
+            @for (
+              hit of searchResult.hits;
+              track hit.vectorStoreId
+            ) {
+              <article class="result-item">
+                <div class="result-item-header">
+                  <div>
+                    <strong>{{ hit.title }}</strong>
+
+                    <span class="document-number">
+                      {{ hit.documentNo }}
+                    </span>
+                  </div>
+
+                  <span class="score">
+                    相似度 {{ scoreLabel(hit.score) }}
+                  </span>
+                </div>
+
+                <div class="result-metadata">
+                  <span>
+                    {{ categoryLabel(hit.category) }}
+                  </span>
+
+                  <span>v{{ hit.versionNo }}</span>
+                  <span>切块 {{ hit.chunkNo }}</span>
+                </div>
+
+                <p class="result-content">
+                  {{ hit.content }}
+                </p>
+              </article>
+            }
+          </div>
+        }
+      }
+    }
+  </mat-card-content>
+</mat-card>

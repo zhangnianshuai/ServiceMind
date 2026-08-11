@@ -44,6 +44,9 @@ import {
   KnowledgeDocumentDetailComponent
 } from '../knowledge-document-detail/knowledge-document-detail.component';
 import {
+  KnowledgeSearchComponent
+} from '../knowledge-search/knowledge-search.component';
+import {
   CreateKnowledgeDocumentRequest,
   KnowledgeDocumentCategory,
   KnowledgeDocumentStatus,
@@ -69,7 +72,8 @@ import {
     MatFormFieldModule,
     MatInputModule,
     MatSelectModule,
-    KnowledgeDocumentDetailComponent
+    KnowledgeDocumentDetailComponent,
+    KnowledgeSearchComponent
   ],
   templateUrl:
     './knowledge-documents.component.html',
