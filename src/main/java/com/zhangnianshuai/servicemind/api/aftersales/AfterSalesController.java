@@ -14,13 +14,19 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.zhangnianshuai.servicemind.api.aftersales.dto.AfterSalesPageResponse;
 import com.zhangnianshuai.servicemind.api.aftersales.dto.AfterSalesResponse;
 import com.zhangnianshuai.servicemind.api.aftersales.dto.CreateAfterSalesRequest;
 import com.zhangnianshuai.servicemind.api.aftersales.dto.ReviewAfterSalesRequest;
 import com.zhangnianshuai.servicemind.application.aftersales.AfterSalesApplicationService;
+import com.zhangnianshuai.servicemind.domain.aftersales.AfterSalesStatus;
+import com.zhangnianshuai.servicemind.domain.aftersales.AfterSalesType;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Validated
 @RestController
@@ -49,6 +55,46 @@ public class AfterSalesController {
             .status(HttpStatus.CREATED)
             .location(location)
             .body(response);
+    }
+
+    @GetMapping("/search")
+    public AfterSalesPageResponse search(
+            @RequestParam(required = false)
+            @Size(max = 32)
+            String applicationNo,
+
+            @RequestParam(required = false)
+            @Size(max = 32)
+            String orderNo,
+
+            @RequestParam(required = false)
+            @Size(max = 32)
+            String customerNo,
+
+            @RequestParam(required = false)
+            AfterSalesType type,
+
+            @RequestParam(required = false)
+            AfterSalesStatus status,
+
+            @RequestParam(defaultValue = "0")
+            @Min(0)
+            int page,
+
+            @RequestParam(defaultValue = "20")
+            @Min(1)
+            @Max(100)
+            int size) {
+
+        return service.searchApplications(
+            applicationNo,
+            orderNo,
+            customerNo,
+            type,
+            status,
+            page,
+            size
+        );
     }
 
     @GetMapping("/{applicationNo}")

@@ -8,12 +8,16 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.zhangnianshuai.servicemind.api.aftersales.dto.AfterSalesPageResponse;
 import com.zhangnianshuai.servicemind.api.aftersales.dto.AfterSalesResponse;
 import com.zhangnianshuai.servicemind.api.aftersales.dto.CreateAfterSalesRequest;
 import com.zhangnianshuai.servicemind.domain.aftersales.AfterSalesApplication;
@@ -148,6 +152,40 @@ public class AfterSalesApplicationService {
             .stream()
             .map(this::toResponse)
             .toList();
+    }
+
+    public AfterSalesPageResponse searchApplications(
+            String applicationNo,
+            String orderNo,
+            String customerNo,
+            AfterSalesType type,
+            AfterSalesStatus status,
+            int page,
+            int size) {
+
+        PageRequest pageable =
+            PageRequest.of(
+                page,
+                size,
+                Sort.by(
+                    Sort.Direction.DESC,
+                    "submittedAt"
+                )
+            );
+
+        Page<AfterSalesResponse> result =
+            afterSalesRepository
+                .searchApplications(
+                    toLikePattern(applicationNo),
+                    toLikePattern(orderNo),
+                    toLikePattern(customerNo),
+                    type,
+                    status,
+                    pageable
+                )
+                .map(this::toResponse);
+
+        return AfterSalesPageResponse.from(result);
     }
 
     @Transactional
@@ -380,6 +418,8 @@ public class AfterSalesApplicationService {
         return new AfterSalesResponse(
             application.getApplicationNo(),
             order.getOrderNo(),
+            order.getCustomer().getCustomerNo(),
+            order.getCustomer().getFullName(),
             orderItem.getId(),
             orderItem.getSkuSnapshot(),
             orderItem.getProductNameSnapshot(),
@@ -419,6 +459,17 @@ public class AfterSalesApplicationService {
         return value.trim();
     }
 
+
+    private String toLikePattern(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "%";
+        }
+
+        return "%"
+            + value.trim()
+                .toLowerCase(java.util.Locale.ROOT)
+            + "%";
+    }
     private String normalizeOptional(String value) {
         if (!StringUtils.hasText(value)) {
             return null;

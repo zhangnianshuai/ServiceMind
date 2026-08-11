@@ -1,5 +1,6 @@
 import {
   Component,
+  OnInit,
   inject,
   signal
 } from '@angular/core';
@@ -45,12 +46,21 @@ import {
 } from '@angular/material/input';
 
 import {
+  MatPaginatorModule,
+  PageEvent
+} from '@angular/material/paginator';
+
+import {
   MatProgressSpinnerModule
 } from '@angular/material/progress-spinner';
 
 import {
   MatSelectModule
 } from '@angular/material/select';
+
+import {
+  MatTableModule
+} from '@angular/material/table';
 
 import {
   MatToolbarModule
@@ -81,14 +91,18 @@ import {
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
+    MatTableModule,
     MatToolbarModule
   ],
   templateUrl: './tickets.component.html',
   styleUrl: './tickets.component.scss'
 })
-export class TicketsComponent {
+export class TicketsComponent
+    implements OnInit {
+
   private readonly ticketService =
     inject(TicketService);
 
@@ -101,13 +115,10 @@ export class TicketsComponent {
   readonly isCreating =
     signal(false);
 
-  readonly isSearching =
+  readonly isListLoading =
     signal(false);
 
   readonly isChanging =
-    signal(false);
-
-  readonly searchCompleted =
     signal(false);
 
   readonly createError =
@@ -116,7 +127,7 @@ export class TicketsComponent {
   readonly createSuccess =
     signal<string | null>(null);
 
-  readonly searchError =
+  readonly listError =
     signal<string | null>(null);
 
   readonly actionError =
@@ -124,6 +135,18 @@ export class TicketsComponent {
 
   readonly actionSuccess =
     signal<string | null>(null);
+
+  readonly pageIndex =
+    signal(0);
+
+  readonly pageSize =
+    signal(20);
+
+  readonly totalElements =
+    signal(0);
+
+  readonly totalPages =
+    signal(0);
 
   readonly categories:
       TicketCategory[] = [
@@ -145,6 +168,15 @@ export class TicketsComponent {
         'URGENT'
       ];
 
+  readonly statuses:
+      TicketStatus[] = [
+        'OPEN',
+        'IN_PROGRESS',
+        'WAITING_CUSTOMER',
+        'RESOLVED',
+        'CLOSED'
+      ];
+
   readonly sources:
       TicketSource[] = [
         'WEB',
@@ -154,6 +186,18 @@ export class TicketsComponent {
         'AI',
         'SYSTEM'
       ];
+
+  readonly columns = [
+    'ticketNo',
+    'customer',
+    'subject',
+    'category',
+    'priority',
+    'status',
+    'assignedTo',
+    'openedAt',
+    'actions'
+  ];
 
   readonly createForm =
     new FormGroup({
@@ -244,30 +288,61 @@ export class TicketsComponent {
         )
     });
 
-  readonly customerSearchForm =
-    new FormGroup({
-      customerNo: new FormControl(
-        '',
-        {
-          nonNullable: true,
-          validators: [
-            Validators.required
-          ]
-        }
-      )
-    });
-
-  readonly ticketSearchForm =
+  readonly filterForm =
     new FormGroup({
       ticketNo: new FormControl(
         '',
         {
           nonNullable: true,
           validators: [
-            Validators.required
+            Validators.maxLength(32)
           ]
         }
-      )
+      ),
+
+      customerNo: new FormControl(
+        '',
+        {
+          nonNullable: true,
+          validators: [
+            Validators.maxLength(32)
+          ]
+        }
+      ),
+
+      assignedTo: new FormControl(
+        '',
+        {
+          nonNullable: true,
+          validators: [
+            Validators.maxLength(100)
+          ]
+        }
+      ),
+
+      category:
+        new FormControl<TicketCategory | ''>(
+          '',
+          {
+            nonNullable: true
+          }
+        ),
+
+      priority:
+        new FormControl<TicketPriority | ''>(
+          '',
+          {
+            nonNullable: true
+          }
+        ),
+
+      status:
+        new FormControl<TicketStatus | ''>(
+          '',
+          {
+            nonNullable: true
+          }
+        )
     });
 
   readonly assignmentForm =
@@ -311,6 +386,10 @@ export class TicketsComponent {
         }
       )
     });
+
+  ngOnInit(): void {
+    this.loadTickets();
+  }
 
   createTicket(): void {
     if (this.createForm.invalid) {
@@ -378,6 +457,9 @@ export class TicketsComponent {
             subject: '',
             description: ''
           });
+
+          this.pageIndex.set(0);
+          this.loadTickets();
         },
 
         error: error => {
@@ -389,79 +471,38 @@ export class TicketsComponent {
       });
   }
 
-  searchByCustomer(): void {
-    if (this.customerSearchForm.invalid) {
-      this.customerSearchForm.markAllAsTouched();
+  applyFilters(): void {
+    if (this.filterForm.invalid) {
+      this.filterForm.markAllAsTouched();
       return;
     }
 
-    const customerNo =
-      this.customerSearchForm.controls
-        .customerNo.value.trim();
-
-    this.isSearching.set(true);
-    this.searchCompleted.set(false);
-    this.searchError.set(null);
-    this.tickets.set([]);
-
-    this.ticketService
-      .getByCustomerNo(customerNo)
-      .pipe(
-        finalize(() => {
-          this.isSearching.set(false);
-        })
-      )
-      .subscribe({
-        next: tickets => {
-          this.tickets.set(tickets);
-          this.searchCompleted.set(true);
-        },
-
-        error: error => {
-          this.searchCompleted.set(true);
-
-          this.searchError.set(
-            this.ticketService
-              .resolveErrorMessage(error)
-          );
-        }
-      });
+    this.pageIndex.set(0);
+    this.loadTickets();
   }
 
-  searchByTicketNo(): void {
-    if (this.ticketSearchForm.invalid) {
-      this.ticketSearchForm.markAllAsTouched();
-      return;
-    }
+  resetFilters(): void {
+    this.filterForm.reset({
+      ticketNo: '',
+      customerNo: '',
+      assignedTo: '',
+      category: '',
+      priority: '',
+      status: ''
+    });
 
-    const ticketNo =
-      this.ticketSearchForm.controls
-        .ticketNo.value.trim();
+    this.pageIndex.set(0);
+    this.loadTickets();
+  }
 
-    this.isSearching.set(true);
-    this.searchError.set(null);
+  refreshTickets(): void {
+    this.loadTickets();
+  }
 
-    this.ticketService
-      .getByTicketNo(ticketNo)
-      .pipe(
-        finalize(() => {
-          this.isSearching.set(false);
-        })
-      )
-      .subscribe({
-        next: ticket => {
-          this.selectTicket(ticket);
-        },
-
-        error: error => {
-          this.selectedTicket.set(null);
-
-          this.searchError.set(
-            this.ticketService
-              .resolveErrorMessage(error)
-          );
-        }
-      });
+  onPage(event: PageEvent): void {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
+    this.loadTickets();
   }
 
   selectTicket(
@@ -484,6 +525,12 @@ export class TicketsComponent {
         ticket.resolution ?? ''
     });
 
+    this.actionError.set(null);
+    this.actionSuccess.set(null);
+  }
+
+  closeDetail(): void {
+    this.selectedTicket.set(null);
     this.actionError.set(null);
     this.actionSuccess.set(null);
   }
@@ -638,10 +685,7 @@ export class TicketsComponent {
   canResolve(
     status: TicketStatus
   ): boolean {
-    return (
-      status === 'IN_PROGRESS' ||
-      status === 'WAITING_CUSTOMER'
-    );
+    return status === 'IN_PROGRESS';
   }
 
   canReopen(
@@ -719,6 +763,65 @@ export class TicketsComponent {
     return labels[source];
   }
 
+  private loadTickets(): void {
+    const filters =
+      this.filterForm.getRawValue();
+
+    this.isListLoading.set(true);
+    this.listError.set(null);
+
+    this.ticketService
+      .search(
+        filters.ticketNo,
+        filters.customerNo,
+        filters.assignedTo,
+        filters.category,
+        filters.priority,
+        filters.status,
+        this.pageIndex(),
+        this.pageSize()
+      )
+      .pipe(
+        finalize(() => {
+          this.isListLoading.set(false);
+        })
+      )
+      .subscribe({
+        next: response => {
+          this.tickets.set(
+            response.content
+          );
+
+          this.pageIndex.set(
+            response.page
+          );
+
+          this.pageSize.set(
+            response.size
+          );
+
+          this.totalElements.set(
+            response.totalElements
+          );
+
+          this.totalPages.set(
+            response.totalPages
+          );
+        },
+
+        error: error => {
+          this.tickets.set([]);
+          this.totalElements.set(0);
+          this.totalPages.set(0);
+
+          this.listError.set(
+            this.ticketService
+              .resolveErrorMessage(error)
+          );
+        }
+      });
+  }
+
   private runAction(
     request: Observable<SupportTicket>,
     successMessage: string
@@ -736,11 +839,10 @@ export class TicketsComponent {
       .subscribe({
         next: ticket => {
           this.selectTicket(ticket);
-          this.syncTicket(ticket);
-
           this.actionSuccess.set(
             successMessage
           );
+          this.loadTickets();
         },
 
         error: error => {
@@ -750,28 +852,5 @@ export class TicketsComponent {
           );
         }
       });
-  }
-
-  private syncTicket(
-    ticket: SupportTicket
-  ): void {
-    const current = this.tickets();
-
-    const index =
-      current.findIndex(
-        item =>
-          item.ticketNo ===
-          ticket.ticketNo
-      );
-
-    if (index < 0) {
-      return;
-    }
-
-    const updated = [...current];
-
-    updated[index] = ticket;
-
-    this.tickets.set(updated);
   }
 }

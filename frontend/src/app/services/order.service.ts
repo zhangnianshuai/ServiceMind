@@ -3,12 +3,21 @@ import {
   HttpErrorResponse,
   HttpParams
 } from '@angular/common/http';
-import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+
+import {
+  Injectable,
+  inject
+} from '@angular/core';
+
+import {
+  Observable
+} from 'rxjs';
 
 import {
   CreateOrderRequest,
   OrderDetail,
+  OrderPageResponse,
+  OrderStatus,
   OrderSummary
 } from '../types/order.types';
 
@@ -16,9 +25,57 @@ import {
   providedIn: 'root'
 })
 export class OrderService {
-  private readonly httpClient = inject(HttpClient);
+  private readonly httpClient =
+    inject(HttpClient);
 
-  private readonly apiUrl = '/api/orders';
+  private readonly apiUrl =
+    '/api/orders';
+
+  searchOrders(
+    orderNo: string,
+    customerNo: string,
+    status: OrderStatus | '',
+    page: number,
+    size: number
+  ): Observable<OrderPageResponse> {
+    let params =
+      new HttpParams()
+        .set('page', page)
+        .set('size', size);
+
+    const normalizedOrderNo =
+      orderNo.trim();
+
+    const normalizedCustomerNo =
+      customerNo.trim();
+
+    if (normalizedOrderNo) {
+      params = params.set(
+        'orderNo',
+        normalizedOrderNo
+      );
+    }
+
+    if (normalizedCustomerNo) {
+      params = params.set(
+        'customerNo',
+        normalizedCustomerNo
+      );
+    }
+
+    if (status) {
+      params = params.set(
+        'status',
+        status
+      );
+    }
+
+    return this.httpClient
+      .get<OrderPageResponse>(
+        `${this.apiUrl}/search`,
+        { params }
+      );
+  }
 
   getByOrderNo(
     orderNo: string
@@ -49,45 +106,23 @@ export class OrderService {
     );
   }
 
-  pay(
-    orderNo: string
-  ): Observable<OrderDetail> {
-    return this.postOrderAction(
-      orderNo,
-      'pay'
-    );
+  pay(orderNo: string): Observable<OrderDetail> {
+    return this.postOrderAction(orderNo, 'pay');
   }
 
-  ship(
-    orderNo: string
-  ): Observable<OrderDetail> {
-    return this.postOrderAction(
-      orderNo,
-      'ship'
-    );
+  ship(orderNo: string): Observable<OrderDetail> {
+    return this.postOrderAction(orderNo, 'ship');
   }
 
-  complete(
-    orderNo: string
-  ): Observable<OrderDetail> {
-    return this.postOrderAction(
-      orderNo,
-      'complete'
-    );
+  complete(orderNo: string): Observable<OrderDetail> {
+    return this.postOrderAction(orderNo, 'complete');
   }
 
-  cancel(
-    orderNo: string
-  ): Observable<OrderDetail> {
-    return this.postOrderAction(
-      orderNo,
-      'cancel'
-    );
+  cancel(orderNo: string): Observable<OrderDetail> {
+    return this.postOrderAction(orderNo, 'cancel');
   }
 
-  resolveErrorMessage(
-    error: unknown
-  ): string {
+  resolveErrorMessage(error: unknown): string {
     if (!(error instanceof HttpErrorResponse)) {
       return '订单操作失败，请稍后重试。';
     }

@@ -1,10 +1,13 @@
 import {
   Component,
+  OnInit,
   inject,
   signal
 } from '@angular/core';
 
-import { CommonModule } from '@angular/common';
+import {
+  CommonModule
+} from '@angular/common';
 
 import {
   FormArray,
@@ -44,8 +47,17 @@ import {
 } from '@angular/material/input';
 
 import {
+  MatPaginatorModule,
+  PageEvent
+} from '@angular/material/paginator';
+
+import {
   MatProgressSpinnerModule
 } from '@angular/material/progress-spinner';
+
+import {
+  MatSelectModule
+} from '@angular/material/select';
 
 import {
   MatTableModule
@@ -58,6 +70,10 @@ import {
 import {
   MatTooltipModule
 } from '@angular/material/tooltip';
+
+import {
+  AdminOnlyDirective
+} from '../../directives/admin-only.directive';
 
 import {
   OrderService
@@ -87,25 +103,28 @@ type OrderItemForm = FormGroup<{
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatPaginatorModule,
     MatProgressSpinnerModule,
+    MatSelectModule,
     MatTableModule,
     MatToolbarModule,
-    MatTooltipModule
+    MatTooltipModule,
+    AdminOnlyDirective
   ],
   templateUrl: './orders.component.html',
   styleUrl: './orders.component.scss'
 })
-export class OrdersComponent {
+export class OrdersComponent implements OnInit {
   private readonly orderService =
     inject(OrderService);
 
-  readonly customerOrders =
+  readonly orders =
     signal<OrderSummary[]>([]);
 
   readonly selectedOrder =
     signal<OrderDetail | null>(null);
 
-  readonly isCustomerSearching =
+  readonly isListLoading =
     signal(false);
 
   readonly isOrderLoading =
@@ -117,10 +136,7 @@ export class OrdersComponent {
   readonly isStateChanging =
     signal(false);
 
-  readonly customerSearchCompleted =
-    signal(false);
-
-  readonly customerError =
+  readonly listError =
     signal<string | null>(null);
 
   readonly orderError =
@@ -137,6 +153,26 @@ export class OrdersComponent {
 
   readonly actionSuccess =
     signal<string | null>(null);
+
+  readonly pageIndex =
+    signal(0);
+
+  readonly pageSize =
+    signal(20);
+
+  readonly totalElements =
+    signal(0);
+
+  readonly totalPages =
+    signal(0);
+
+  readonly statuses: OrderStatus[] = [
+    'CREATED',
+    'PAID',
+    'SHIPPED',
+    'COMPLETED',
+    'CANCELLED'
+  ];
 
   readonly orderColumns = [
     'orderNo',
@@ -155,32 +191,35 @@ export class OrdersComponent {
     'lineAmount'
   ];
 
-  readonly customerSearchForm =
-    new FormGroup({
-      customerNo: new FormControl(
-        '',
-        {
-          nonNullable: true,
-          validators: [
-            Validators.required,
-            Validators.maxLength(32)
-          ]
-        }
-      )
-    });
-
-  readonly orderSearchForm =
+  readonly filterForm =
     new FormGroup({
       orderNo: new FormControl(
         '',
         {
           nonNullable: true,
           validators: [
-            Validators.required,
             Validators.maxLength(32)
           ]
         }
-      )
+      ),
+
+      customerNo: new FormControl(
+        '',
+        {
+          nonNullable: true,
+          validators: [
+            Validators.maxLength(32)
+          ]
+        }
+      ),
+
+      status:
+        new FormControl<OrderStatus | ''>(
+          '',
+          {
+            nonNullable: true
+          }
+        )
     });
 
   readonly createOrderForm =
@@ -201,8 +240,11 @@ export class OrdersComponent {
       ])
     });
 
-  get createItems():
-      FormArray<OrderItemForm> {
+  ngOnInit(): void {
+    this.loadOrders();
+  }
+
+  get createItems(): FormArray<OrderItemForm> {
     return this.createOrderForm.controls.items;
   }
 
@@ -216,14 +258,43 @@ export class OrdersComponent {
     );
   }
 
-  removeOrderItem(
-    index: number
-  ): void {
+  removeOrderItem(index: number): void {
     if (this.createItems.length <= 1) {
       return;
     }
 
     this.createItems.removeAt(index);
+  }
+
+  applyFilters(): void {
+    if (this.filterForm.invalid) {
+      this.filterForm.markAllAsTouched();
+      return;
+    }
+
+    this.pageIndex.set(0);
+    this.loadOrders();
+  }
+
+  resetFilters(): void {
+    this.filterForm.reset({
+      orderNo: '',
+      customerNo: '',
+      status: ''
+    });
+
+    this.pageIndex.set(0);
+    this.loadOrders();
+  }
+
+  refreshOrders(): void {
+    this.loadOrders();
+  }
+
+  onPage(event: PageEvent): void {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
+    this.loadOrders();
   }
 
   createOrder(): void {
@@ -242,7 +313,6 @@ export class OrdersComponent {
           item => ({
             sku:
               item.controls.sku.value.trim(),
-
             quantity:
               item.controls.quantity.value
           })
@@ -270,12 +340,9 @@ export class OrdersComponent {
             `订单 ${order.orderNo} 创建成功。`
           );
 
-          this.syncCustomerOrder(
-            order,
-            true
-          );
-
           this.resetCreateForm();
+          this.pageIndex.set(0);
+          this.loadOrders();
         },
 
         error: error => {
@@ -287,80 +354,8 @@ export class OrdersComponent {
       });
   }
 
-  searchByCustomer(): void {
-    if (this.customerSearchForm.invalid) {
-      this.customerSearchForm.markAllAsTouched();
-      return;
-    }
-
-    const customerNo =
-      this.customerSearchForm.controls
-        .customerNo.value.trim();
-
-    if (!customerNo) {
-      return;
-    }
-
-    this.isCustomerSearching.set(true);
-    this.customerSearchCompleted.set(false);
-    this.customerError.set(null);
-    this.customerOrders.set([]);
-
-    this.orderService
-      .getByCustomerNo(customerNo)
-      .pipe(
-        finalize(() => {
-          this.isCustomerSearching.set(false);
-        })
-      )
-      .subscribe({
-        next: orders => {
-          this.customerOrders.set(orders);
-          this.customerSearchCompleted.set(true);
-        },
-
-        error: error => {
-          this.customerSearchCompleted.set(true);
-
-          this.customerError.set(
-            this.orderService
-              .resolveErrorMessage(error)
-          );
-        }
-      });
-  }
-
-  searchByOrderNo(): void {
-    if (this.orderSearchForm.invalid) {
-      this.orderSearchForm.markAllAsTouched();
-      return;
-    }
-
-    const orderNo =
-      this.orderSearchForm.controls
-        .orderNo.value.trim();
-
-    if (!orderNo) {
-      return;
-    }
-
-    this.loadOrder(orderNo);
-  }
-
-  openOrder(
-    order: OrderSummary
-  ): void {
+  openOrder(order: OrderSummary): void {
     this.loadOrder(order.orderNo);
-  }
-
-  clearCustomerSearch(): void {
-    this.customerSearchForm.reset({
-      customerNo: ''
-    });
-
-    this.customerOrders.set([]);
-    this.customerSearchCompleted.set(false);
-    this.customerError.set(null);
   }
 
   closeOrderDetail(): void {
@@ -422,36 +417,26 @@ export class OrdersComponent {
     );
   }
 
-  canPay(
-    order: OrderDetail
-  ): boolean {
+  canPay(order: OrderDetail): boolean {
     return order.status === 'CREATED';
   }
 
-  canShip(
-    order: OrderDetail
-  ): boolean {
+  canShip(order: OrderDetail): boolean {
     return order.status === 'PAID';
   }
 
-  canComplete(
-    order: OrderDetail
-  ): boolean {
+  canComplete(order: OrderDetail): boolean {
     return order.status === 'SHIPPED';
   }
 
-  canCancel(
-    order: OrderDetail
-  ): boolean {
+  canCancel(order: OrderDetail): boolean {
     return (
       order.status === 'CREATED' ||
       order.status === 'PAID'
     );
   }
 
-  statusLabel(
-    status: OrderStatus
-  ): string {
+  statusLabel(status: OrderStatus): string {
     const labels: Record<OrderStatus, string> = {
       CREATED: '已创建',
       PAID: '已支付',
@@ -463,10 +448,54 @@ export class OrdersComponent {
     return labels[status];
   }
 
-  statusClass(
-    status: OrderStatus
-  ): string {
+  statusClass(status: OrderStatus): string {
     return `status-${status.toLowerCase()}`;
+  }
+
+  private loadOrders(): void {
+    const filters =
+      this.filterForm.getRawValue();
+
+    this.isListLoading.set(true);
+    this.listError.set(null);
+
+    this.orderService
+      .searchOrders(
+        filters.orderNo,
+        filters.customerNo,
+        filters.status,
+        this.pageIndex(),
+        this.pageSize()
+      )
+      .pipe(
+        finalize(() => {
+          this.isListLoading.set(false);
+        })
+      )
+      .subscribe({
+        next: response => {
+          this.orders.set(response.content);
+          this.pageIndex.set(response.page);
+          this.pageSize.set(response.size);
+          this.totalElements.set(
+            response.totalElements
+          );
+          this.totalPages.set(
+            response.totalPages
+          );
+        },
+
+        error: error => {
+          this.orders.set([]);
+          this.totalElements.set(0);
+          this.totalPages.set(0);
+
+          this.listError.set(
+            this.orderService
+              .resolveErrorMessage(error)
+          );
+        }
+      });
   }
 
   private createOrderItemForm():
@@ -507,9 +536,7 @@ export class OrdersComponent {
     );
   }
 
-  private loadOrder(
-    orderNo: string
-  ): void {
+  private loadOrder(orderNo: string): void {
     this.isOrderLoading.set(true);
     this.orderError.set(null);
     this.actionError.set(null);
@@ -555,15 +582,8 @@ export class OrdersComponent {
       .subscribe({
         next: order => {
           this.selectedOrder.set(order);
-
-          this.syncCustomerOrder(
-            order,
-            false
-          );
-
-          this.actionSuccess.set(
-            successMessage
-          );
+          this.actionSuccess.set(successMessage);
+          this.loadOrders();
         },
 
         error: error => {
@@ -573,53 +593,5 @@ export class OrdersComponent {
           );
         }
       });
-  }
-
-  private syncCustomerOrder(
-    order: OrderDetail,
-    addIfMissing: boolean
-  ): void {
-    const currentCustomerNo =
-      this.customerSearchForm.controls
-        .customerNo.value.trim();
-
-    if (
-      !currentCustomerNo ||
-      currentCustomerNo.toLowerCase() !==
-        order.customerNo.toLowerCase()
-    ) {
-      return;
-    }
-
-    const summary: OrderSummary = {
-      orderNo: order.orderNo,
-      customerNo: order.customerNo,
-      customerName: order.customerName,
-      status: order.status,
-      totalAmount: order.totalAmount,
-      orderedAt: order.orderedAt
-    };
-
-    const orders = this.customerOrders();
-
-    const index = orders.findIndex(
-      item =>
-        item.orderNo === order.orderNo
-    );
-
-    if (index >= 0) {
-      const updated = [...orders];
-      updated[index] = summary;
-
-      this.customerOrders.set(updated);
-      return;
-    }
-
-    if (addIfMissing) {
-      this.customerOrders.set([
-        summary,
-        ...orders
-      ]);
-    }
   }
 }

@@ -28,6 +28,8 @@ export interface ReviewAfterSalesRequest {
 export interface AfterSalesApplication {
   applicationNo: string;
   orderNo: string;
+  customerNo: string;
+  customerName: string;
   orderItemId: number;
   sku: string;
   productName: string;
@@ -41,4 +43,14 @@ export interface AfterSalesApplication {
   reviewedAt: string | null;
   completedAt: string | null;
   warrantyExpiresAt: string | null;
+}
+
+export interface AfterSalesPageResponse {
+  content: AfterSalesApplication[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
 }

@@ -7,7 +7,7 @@
       <div>
         <h1>售后中心</h1>
         <p>
-          管理退货、换货和维修申请
+          查看全部售后申请并管理退货、换货和维修流程
         </p>
       </div>
     </div>
@@ -15,6 +15,7 @@
 
   <mat-card>
     <mat-card-content>
+
       <div class="section-heading">
         <mat-icon>shopping_bag</mat-icon>
 
@@ -170,7 +171,6 @@
         } @else {
           <div class="feedback warning">
             <mat-icon>info</mat-icon>
-
             当前订单状态不支持创建售后申请。
             退货/换货要求订单已发货或已完成；
             维修要求订单已完成。
@@ -194,88 +194,263 @@
     </mat-card-content>
   </mat-card>
 
-  <div class="search-grid">
-    <mat-card>
-      <mat-card-content>
-        <div class="section-heading">
-          <mat-icon>person_search</mat-icon>
+  <mat-card class="filter-card">
+    <mat-card-content>
 
-          <div>
-            <h2>客户售后记录</h2>
-            <p>按客户编号查询全部申请</p>
-          </div>
+      <div class="list-heading">
+        <div>
+          <h2>售后申请列表</h2>
+          <p>
+            默认显示全部申请，可按申请号、订单、客户、类型和状态筛选
+          </p>
         </div>
 
-        <form
-          class="search-form"
-          [formGroup]="customerSearchForm"
-          (ngSubmit)="searchByCustomer()">
+        <button
+          mat-icon-button
+          type="button"
+          [disabled]="isListLoading()"
+          (click)="refreshApplications()">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>客户编号</mat-label>
+      <form
+        class="filter-form"
+        [formGroup]="filterForm"
+        (ngSubmit)="applyFilters()">
 
-            <input
-              matInput
-              maxlength="32"
-              formControlName="customerNo"
-              placeholder="例如：CUST-001">
-          </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>申请编号</mat-label>
+          <input
+            matInput
+            maxlength="32"
+            formControlName="applicationNo"
+            placeholder="AS...">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>订单编号</mat-label>
+          <input
+            matInput
+            maxlength="32"
+            formControlName="orderNo"
+            placeholder="ORD...">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>客户编号</mat-label>
+          <input
+            matInput
+            maxlength="32"
+            formControlName="customerNo"
+            placeholder="CUST-901">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>售后类型</mat-label>
+          <mat-select formControlName="type">
+            <mat-option value="">全部类型</mat-option>
+            @for (type of types; track type) {
+              <mat-option [value]="type">
+                {{ typeLabel(type) }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>处理状态</mat-label>
+          <mat-select formControlName="status">
+            <mat-option value="">全部状态</mat-option>
+            @for (status of statuses; track status) {
+              <mat-option [value]="status">
+                {{ statusLabel(status) }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <div class="filter-actions">
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="isListLoading()"
+            (click)="resetFilters()">
+            <mat-icon>restart_alt</mat-icon>
+            重置
+          </button>
 
           <button
             mat-flat-button
             type="submit"
-            [disabled]="isSearching()">
+            [disabled]="isListLoading()">
             <mat-icon>search</mat-icon>
             查询
           </button>
-        </form>
-      </mat-card-content>
-    </mat-card>
+        </div>
+      </form>
 
-    <mat-card>
-      <mat-card-content>
-        <div class="section-heading">
-          <mat-icon>manage_search</mat-icon>
+      @if (listError()) {
+        <div class="feedback error">
+          <mat-icon>error_outline</mat-icon>
+          {{ listError() }}
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
 
-          <div>
-            <h2>申请详情查询</h2>
-            <p>按售后申请号直接查询</p>
-          </div>
+  <mat-card>
+    <mat-card-content>
+
+      <div class="list-heading">
+        <div>
+          <h2>全部售后申请</h2>
+          <p>
+            共 {{ totalElements() }} 条
+            @if (totalPages() > 0) {
+              · 第 {{ pageIndex() + 1 }} / {{ totalPages() }} 页
+            }
+          </p>
         </div>
 
-        <form
-          class="search-form"
-          [formGroup]="applicationSearchForm"
-          (ngSubmit)="searchByApplicationNo()">
+        @if (isListLoading()) {
+          <mat-spinner diameter="22">
+          </mat-spinner>
+        }
+      </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>售后申请号</mat-label>
+      @if (
+        !isListLoading() &&
+        applications().length === 0 &&
+        !listError()
+      ) {
+        <div class="empty-panel">
+          <mat-icon>inbox</mat-icon>
+          <strong>没有符合条件的售后申请</strong>
+          <span>可以调整筛选条件后重新查询。</span>
+        </div>
+      } @else {
+        <div class="table-container">
+          <table
+            mat-table
+            [dataSource]="applications()">
 
-            <input
-              matInput
-              maxlength="32"
-              formControlName="applicationNo"
-              placeholder="例如：AS...">
-          </mat-form-field>
+            <ng-container matColumnDef="applicationNo">
+              <th mat-header-cell *matHeaderCellDef>
+                申请编号
+              </th>
+              <td mat-cell *matCellDef="let application">
+                <strong>
+                  {{ application.applicationNo }}
+                </strong>
+              </td>
+            </ng-container>
 
-          <button
-            mat-flat-button
-            type="submit"
-            [disabled]="isSearching()">
-            <mat-icon>search</mat-icon>
-            查询
-          </button>
-        </form>
-      </mat-card-content>
-    </mat-card>
-  </div>
+            <ng-container matColumnDef="customer">
+              <th mat-header-cell *matHeaderCellDef>
+                客户
+              </th>
+              <td mat-cell *matCellDef="let application">
+                <div class="cell-stack">
+                  <strong>{{ application.customerName }}</strong>
+                  <span>{{ application.customerNo }}</span>
+                </div>
+              </td>
+            </ng-container>
 
-  @if (searchError()) {
-    <div class="feedback error">
-      <mat-icon>error_outline</mat-icon>
-      {{ searchError() }}
-    </div>
-  }
+            <ng-container matColumnDef="orderNo">
+              <th mat-header-cell *matHeaderCellDef>
+                订单
+              </th>
+              <td mat-cell *matCellDef="let application">
+                {{ application.orderNo }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="product">
+              <th mat-header-cell *matHeaderCellDef>
+                商品
+              </th>
+              <td mat-cell *matCellDef="let application">
+                <div class="cell-stack">
+                  <strong>{{ application.productName }}</strong>
+                  <span>{{ application.sku }}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="type">
+              <th mat-header-cell *matHeaderCellDef>
+                类型
+              </th>
+              <td mat-cell *matCellDef="let application">
+                {{ typeLabel(application.type) }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>
+                状态
+              </th>
+              <td mat-cell *matCellDef="let application">
+                <mat-chip>
+                  {{ statusLabel(application.status) }}
+                </mat-chip>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="submittedAt">
+              <th mat-header-cell *matHeaderCellDef>
+                提交时间
+              </th>
+              <td mat-cell *matCellDef="let application">
+                {{
+                  application.submittedAt |
+                    date:'yyyy-MM-dd HH:mm'
+                }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>
+                操作
+              </th>
+              <td mat-cell *matCellDef="let application">
+                <button
+                  mat-icon-button
+                  type="button"
+                  (click)="selectApplication(application)">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr
+              mat-header-row
+              *matHeaderRowDef="columns">
+            </tr>
+
+            <tr
+              mat-row
+              *matRowDef="
+                let row;
+                columns: columns
+              ">
+            </tr>
+          </table>
+        </div>
+
+        <mat-paginator
+          [length]="totalElements()"
+          [pageIndex]="pageIndex()"
+          [pageSize]="pageSize()"
+          [pageSizeOptions]="[10, 20, 50]"
+          [showFirstLastButtons]="true"
+          (page)="onPage($event)">
+        </mat-paginator>
+      }
+    </mat-card-content>
+  </mat-card>
 
   @if (selectedApplication(); as application) {
     <mat-card class="detail-card">
@@ -287,12 +462,27 @@
             <p>{{ application.applicationNo }}</p>
           </div>
 
-          <mat-chip>
-            {{ statusLabel(application.status) }}
-          </mat-chip>
+          <div class="detail-heading-actions">
+            <mat-chip>
+              {{ statusLabel(application.status) }}
+            </mat-chip>
+
+            <button
+              mat-icon-button
+              type="button"
+              (click)="closeDetail()">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
         </div>
 
         <div class="detail-grid">
+          <div>
+            <span>客户</span>
+            <strong>{{ application.customerName }}</strong>
+            <small>{{ application.customerNo }}</small>
+          </div>
+
           <div>
             <span>关联订单</span>
             <strong>{{ application.orderNo }}</strong>
@@ -352,9 +542,7 @@
         }
 
         <div class="state-actions">
-          @if (
-            canStartReview(application.status)
-          ) {
+          @if (canStartReview(application.status)) {
             <button
               mat-flat-button
               type="button"
@@ -385,9 +573,7 @@
             </button>
           }
 
-          @if (
-            canStartProcessing(application.status)
-          ) {
+          @if (canStartProcessing(application.status)) {
             <button
               mat-flat-button
               type="button"
@@ -500,71 +686,6 @@
             <p>{{ application.reviewComment }}</p>
           </div>
         }
-      </mat-card-content>
-    </mat-card>
-  }
-
-  @if (customerApplications().length > 0) {
-    <mat-card>
-      <mat-card-content>
-        <div class="section-heading">
-          <mat-icon>history</mat-icon>
-
-          <div>
-            <h2>客户售后记录</h2>
-            <p>
-              共 {{ customerApplications().length }} 条
-            </p>
-          </div>
-        </div>
-
-        <div class="application-list">
-          @for (
-            application of customerApplications();
-            track application.applicationNo
-          ) {
-            <button
-              type="button"
-              class="application-row"
-              (click)="selectApplication(application)">
-
-              <div>
-                <strong>
-                  {{ application.applicationNo }}
-                </strong>
-
-                <span>
-                  {{ application.productName }}
-                  · {{ typeLabel(application.type) }}
-                </span>
-              </div>
-
-              <div class="list-status">
-                <mat-chip>
-                  {{ statusLabel(application.status) }}
-                </mat-chip>
-
-                <span>
-                  {{
-                    application.submittedAt |
-                      date:'yyyy-MM-dd HH:mm'
-                  }}
-                </span>
-              </div>
-            </button>
-          }
-        </div>
-      </mat-card-content>
-    </mat-card>
-  } @else if (
-    customerSearchCompleted() &&
-    !searchError()
-  ) {
-    <mat-card class="empty-card">
-      <mat-card-content>
-        <mat-icon>inbox</mat-icon>
-        <h3>暂无售后记录</h3>
-        <p>该客户目前没有售后申请。</p>
       </mat-card-content>
     </mat-card>
   }

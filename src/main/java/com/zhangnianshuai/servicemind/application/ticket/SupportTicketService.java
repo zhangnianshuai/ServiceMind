@@ -6,6 +6,9 @@ import java.util.UUID;
 import java.util.function.Consumer;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,6 +16,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.zhangnianshuai.servicemind.api.ticket.dto.CreateSupportTicketRequest;
+import com.zhangnianshuai.servicemind.api.ticket.dto.SupportTicketPageResponse;
 import com.zhangnianshuai.servicemind.api.ticket.dto.SupportTicketResponse;
 import com.zhangnianshuai.servicemind.domain.aftersales.AfterSalesApplication;
 import com.zhangnianshuai.servicemind.domain.aftersales.AfterSalesApplicationRepository;
@@ -22,6 +26,7 @@ import com.zhangnianshuai.servicemind.domain.order.CustomerOrder;
 import com.zhangnianshuai.servicemind.domain.order.CustomerOrderRepository;
 import com.zhangnianshuai.servicemind.domain.ticket.SupportTicket;
 import com.zhangnianshuai.servicemind.domain.ticket.SupportTicketRepository;
+import com.zhangnianshuai.servicemind.domain.ticket.TicketCategory;
 import com.zhangnianshuai.servicemind.domain.ticket.TicketPriority;
 import com.zhangnianshuai.servicemind.domain.ticket.TicketStatus;
 
@@ -177,6 +182,42 @@ public class SupportTicketService {
             .stream()
             .map(this::toResponse)
             .toList();
+    }
+
+    public SupportTicketPageResponse searchTickets(
+            String ticketNo,
+            String customerNo,
+            String assignedTo,
+            TicketCategory category,
+            TicketPriority priority,
+            TicketStatus status,
+            int page,
+            int size) {
+
+        PageRequest pageable =
+            PageRequest.of(
+                page,
+                size,
+                Sort.by(
+                    Sort.Direction.DESC,
+                    "openedAt"
+                )
+            );
+
+        Page<SupportTicketResponse> result =
+            ticketRepository
+                .searchTickets(
+                    toLikePattern(ticketNo),
+                    toLikePattern(customerNo),
+                    toLikePattern(assignedTo),
+                    category,
+                    priority,
+                    status,
+                    pageable
+                )
+                .map(this::toResponse);
+
+        return SupportTicketPageResponse.from(result);
     }
 
     @Transactional
@@ -413,6 +454,26 @@ public class SupportTicketService {
                 HttpStatus.BAD_REQUEST,
                 errorMessage
             );
+        }
+
+        return value.trim();
+    }
+
+
+    private String toLikePattern(String value) {
+        if (!StringUtils.hasText(value)) {
+            return "%";
+        }
+
+        return "%"
+            + value.trim()
+                .toLowerCase(java.util.Locale.ROOT)
+            + "%";
+    }
+    private String normalizeOptional(
+            String value) {
+        if (!StringUtils.hasText(value)) {
+            return null;
         }
 
         return value.trim();

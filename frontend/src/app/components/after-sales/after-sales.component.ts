@@ -1,5 +1,6 @@
 import {
   Component,
+  OnInit,
   inject,
   signal
 } from '@angular/core';
@@ -45,6 +46,11 @@ import {
 } from '@angular/material/input';
 
 import {
+  MatPaginatorModule,
+  PageEvent
+} from '@angular/material/paginator';
+
+import {
   MatProgressSpinnerModule
 } from '@angular/material/progress-spinner';
 
@@ -53,12 +59,12 @@ import {
 } from '@angular/material/select';
 
 import {
-  MatToolbarModule
-} from '@angular/material/toolbar';
+  MatTableModule
+} from '@angular/material/table';
 
 import {
-  MatTooltipModule
-} from '@angular/material/tooltip';
+  MatToolbarModule
+} from '@angular/material/toolbar';
 
 import {
   AfterSalesService
@@ -91,20 +97,26 @@ import {
     MatFormFieldModule,
     MatIconModule,
     MatInputModule,
+    MatPaginatorModule,
     MatProgressSpinnerModule,
     MatSelectModule,
-    MatToolbarModule,
-    MatTooltipModule
+    MatTableModule,
+    MatToolbarModule
   ],
   templateUrl: './after-sales.component.html',
   styleUrl: './after-sales.component.scss'
 })
-export class AfterSalesComponent {
+export class AfterSalesComponent
+    implements OnInit {
+
   private readonly afterSalesService =
     inject(AfterSalesService);
 
   private readonly orderService =
     inject(OrderService);
+
+  readonly applications =
+    signal<AfterSalesApplication[]>([]);
 
   readonly loadedOrder =
     signal<OrderDetail | null>(null);
@@ -112,16 +124,13 @@ export class AfterSalesComponent {
   readonly selectedApplication =
     signal<AfterSalesApplication | null>(null);
 
-  readonly customerApplications =
-    signal<AfterSalesApplication[]>([]);
-
   readonly isOrderLoading =
     signal(false);
 
   readonly isCreating =
     signal(false);
 
-  readonly isSearching =
+  readonly isListLoading =
     signal(false);
 
   readonly isChangingState =
@@ -136,7 +145,7 @@ export class AfterSalesComponent {
   readonly createSuccess =
     signal<string | null>(null);
 
-  readonly searchError =
+  readonly listError =
     signal<string | null>(null);
 
   readonly actionError =
@@ -145,8 +154,44 @@ export class AfterSalesComponent {
   readonly actionSuccess =
     signal<string | null>(null);
 
-  readonly customerSearchCompleted =
-    signal(false);
+  readonly pageIndex =
+    signal(0);
+
+  readonly pageSize =
+    signal(20);
+
+  readonly totalElements =
+    signal(0);
+
+  readonly totalPages =
+    signal(0);
+
+  readonly types: AfterSalesType[] = [
+    'RETURN',
+    'EXCHANGE',
+    'REPAIR'
+  ];
+
+  readonly statuses: AfterSalesStatus[] = [
+    'SUBMITTED',
+    'UNDER_REVIEW',
+    'APPROVED',
+    'REJECTED',
+    'PROCESSING',
+    'COMPLETED',
+    'CANCELLED'
+  ];
+
+  readonly columns = [
+    'applicationNo',
+    'customer',
+    'orderNo',
+    'product',
+    'type',
+    'status',
+    'submittedAt',
+    'actions'
+  ];
 
   readonly orderLoadForm =
     new FormGroup({
@@ -215,32 +260,53 @@ export class AfterSalesComponent {
         )
     });
 
-  readonly customerSearchForm =
-    new FormGroup({
-      customerNo: new FormControl(
-        '',
-        {
-          nonNullable: true,
-          validators: [
-            Validators.required,
-            Validators.maxLength(32)
-          ]
-        }
-      )
-    });
-
-  readonly applicationSearchForm =
+  readonly filterForm =
     new FormGroup({
       applicationNo: new FormControl(
         '',
         {
           nonNullable: true,
           validators: [
-            Validators.required,
             Validators.maxLength(32)
           ]
         }
-      )
+      ),
+
+      orderNo: new FormControl(
+        '',
+        {
+          nonNullable: true,
+          validators: [
+            Validators.maxLength(32)
+          ]
+        }
+      ),
+
+      customerNo: new FormControl(
+        '',
+        {
+          nonNullable: true,
+          validators: [
+            Validators.maxLength(32)
+          ]
+        }
+      ),
+
+      type:
+        new FormControl<AfterSalesType | ''>(
+          '',
+          {
+            nonNullable: true
+          }
+        ),
+
+      status:
+        new FormControl<AfterSalesStatus | ''>(
+          '',
+          {
+            nonNullable: true
+          }
+        )
     });
 
   readonly reviewForm =
@@ -255,6 +321,10 @@ export class AfterSalesComponent {
         }
       )
     });
+
+  ngOnInit(): void {
+    this.loadApplications();
+  }
 
   loadOrder(): void {
     if (this.orderLoadForm.invalid) {
@@ -350,13 +420,14 @@ export class AfterSalesComponent {
       )
       .subscribe({
         next: application => {
-          this.selectedApplication.set(
-            application
-          );
+          this.selectApplication(application);
 
           this.createSuccess.set(
             `售后申请 ${application.applicationNo} 创建成功。`
           );
+
+          this.pageIndex.set(0);
+          this.loadApplications();
         },
 
         error: error => {
@@ -368,86 +439,37 @@ export class AfterSalesComponent {
       });
   }
 
-  searchByCustomer(): void {
-    if (this.customerSearchForm.invalid) {
-      this.customerSearchForm.markAllAsTouched();
+  applyFilters(): void {
+    if (this.filterForm.invalid) {
+      this.filterForm.markAllAsTouched();
       return;
     }
 
-    const customerNo =
-      this.customerSearchForm.controls
-        .customerNo.value.trim();
-
-    this.isSearching.set(true);
-    this.searchError.set(null);
-    this.customerSearchCompleted.set(false);
-    this.customerApplications.set([]);
-
-    this.afterSalesService
-      .getByCustomerNo(customerNo)
-      .pipe(
-        finalize(() => {
-          this.isSearching.set(false);
-        })
-      )
-      .subscribe({
-        next: applications => {
-          this.customerApplications.set(
-            applications
-          );
-
-          this.customerSearchCompleted.set(
-            true
-          );
-        },
-
-        error: error => {
-          this.customerSearchCompleted.set(
-            true
-          );
-
-          this.searchError.set(
-            this.afterSalesService
-              .resolveErrorMessage(error)
-          );
-        }
-      });
+    this.pageIndex.set(0);
+    this.loadApplications();
   }
 
-  searchByApplicationNo(): void {
-    if (this.applicationSearchForm.invalid) {
-      this.applicationSearchForm.markAllAsTouched();
-      return;
-    }
+  resetFilters(): void {
+    this.filterForm.reset({
+      applicationNo: '',
+      orderNo: '',
+      customerNo: '',
+      type: '',
+      status: ''
+    });
 
-    const applicationNo =
-      this.applicationSearchForm.controls
-        .applicationNo.value.trim();
+    this.pageIndex.set(0);
+    this.loadApplications();
+  }
 
-    this.isSearching.set(true);
-    this.searchError.set(null);
+  refreshApplications(): void {
+    this.loadApplications();
+  }
 
-    this.afterSalesService
-      .getByApplicationNo(applicationNo)
-      .pipe(
-        finalize(() => {
-          this.isSearching.set(false);
-        })
-      )
-      .subscribe({
-        next: application => {
-          this.selectApplication(application);
-        },
-
-        error: error => {
-          this.selectedApplication.set(null);
-
-          this.searchError.set(
-            this.afterSalesService
-              .resolveErrorMessage(error)
-          );
-        }
-      });
+  onPage(event: PageEvent): void {
+    this.pageIndex.set(event.pageIndex);
+    this.pageSize.set(event.pageSize);
+    this.loadApplications();
   }
 
   selectApplication(
@@ -462,6 +484,12 @@ export class AfterSalesComponent {
         application.reviewComment ?? ''
     });
 
+    this.actionError.set(null);
+    this.actionSuccess.set(null);
+  }
+
+  closeDetail(): void {
+    this.selectedApplication.set(null);
     this.actionError.set(null);
     this.actionSuccess.set(null);
   }
@@ -663,6 +691,64 @@ export class AfterSalesComponent {
     return labels[type];
   }
 
+  private loadApplications(): void {
+    const filters =
+      this.filterForm.getRawValue();
+
+    this.isListLoading.set(true);
+    this.listError.set(null);
+
+    this.afterSalesService
+      .search(
+        filters.applicationNo,
+        filters.orderNo,
+        filters.customerNo,
+        filters.type,
+        filters.status,
+        this.pageIndex(),
+        this.pageSize()
+      )
+      .pipe(
+        finalize(() => {
+          this.isListLoading.set(false);
+        })
+      )
+      .subscribe({
+        next: response => {
+          this.applications.set(
+            response.content
+          );
+
+          this.pageIndex.set(
+            response.page
+          );
+
+          this.pageSize.set(
+            response.size
+          );
+
+          this.totalElements.set(
+            response.totalElements
+          );
+
+          this.totalPages.set(
+            response.totalPages
+          );
+        },
+
+        error: error => {
+          this.applications.set([]);
+          this.totalElements.set(0);
+          this.totalPages.set(0);
+
+          this.listError.set(
+            this.afterSalesService
+              .resolveErrorMessage(error)
+          );
+        }
+      });
+  }
+
   private runAction(
     request: Observable<AfterSalesApplication>,
     message: string
@@ -679,13 +765,9 @@ export class AfterSalesComponent {
       )
       .subscribe({
         next: application => {
-          this.selectedApplication.set(
-            application
-          );
-
-          this.syncApplication(application);
-
+          this.selectApplication(application);
           this.actionSuccess.set(message);
+          this.loadApplications();
         },
 
         error: error => {
@@ -695,31 +777,5 @@ export class AfterSalesComponent {
           );
         }
       });
-  }
-
-  private syncApplication(
-    application: AfterSalesApplication
-  ): void {
-    const applications =
-      this.customerApplications();
-
-    const index =
-      applications.findIndex(
-        item =>
-          item.applicationNo ===
-          application.applicationNo
-      );
-
-    if (index < 0) {
-      return;
-    }
-
-    const updated = [...applications];
-
-    updated[index] = application;
-
-    this.customerApplications.set(
-      updated
-    );
   }
 }

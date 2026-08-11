@@ -30,6 +30,16 @@ export interface OrderDetail extends OrderSummary {
   items: OrderItem[];
 }
 
+export interface OrderPageResponse {
+  content: OrderSummary[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}
+
 export interface CreateOrderItemRequest {
   sku: string;
   quantity: number;

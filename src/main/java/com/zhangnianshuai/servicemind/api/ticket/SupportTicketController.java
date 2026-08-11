@@ -18,11 +18,18 @@ import com.zhangnianshuai.servicemind.api.ticket.dto.AssignTicketRequest;
 import com.zhangnianshuai.servicemind.api.ticket.dto.ChangeTicketPriorityRequest;
 import com.zhangnianshuai.servicemind.api.ticket.dto.CreateSupportTicketRequest;
 import com.zhangnianshuai.servicemind.api.ticket.dto.ResolveTicketRequest;
+import com.zhangnianshuai.servicemind.api.ticket.dto.SupportTicketPageResponse;
 import com.zhangnianshuai.servicemind.api.ticket.dto.SupportTicketResponse;
 import com.zhangnianshuai.servicemind.application.ticket.SupportTicketService;
+import com.zhangnianshuai.servicemind.domain.ticket.TicketCategory;
+import com.zhangnianshuai.servicemind.domain.ticket.TicketPriority;
+import com.zhangnianshuai.servicemind.domain.ticket.TicketStatus;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
 @Validated
 @RestController
@@ -52,6 +59,50 @@ public class SupportTicketController {
             .status(HttpStatus.CREATED)
             .location(location)
             .body(response);
+    }
+
+    @GetMapping("/search")
+    public SupportTicketPageResponse search(
+            @RequestParam(required = false)
+            @Size(max = 32)
+            String ticketNo,
+
+            @RequestParam(required = false)
+            @Size(max = 32)
+            String customerNo,
+
+            @RequestParam(required = false)
+            @Size(max = 100)
+            String assignedTo,
+
+            @RequestParam(required = false)
+            TicketCategory category,
+
+            @RequestParam(required = false)
+            TicketPriority priority,
+
+            @RequestParam(required = false)
+            TicketStatus status,
+
+            @RequestParam(defaultValue = "0")
+            @Min(0)
+            int page,
+
+            @RequestParam(defaultValue = "20")
+            @Min(1)
+            @Max(100)
+            int size) {
+
+        return service.searchTickets(
+            ticketNo,
+            customerNo,
+            assignedTo,
+            category,
+            priority,
+            status,
+            page,
+            size
+        );
     }
 
     @GetMapping("/{ticketNo}")

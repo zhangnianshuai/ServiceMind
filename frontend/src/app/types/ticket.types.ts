@@ -62,3 +62,13 @@ export interface SupportTicket {
   createdAt: string;
   updatedAt: string;
 }
+
+export interface SupportTicketPageResponse {
+  content: SupportTicket[];
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  first: boolean;
+  last: boolean;
+}

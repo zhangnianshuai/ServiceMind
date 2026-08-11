@@ -15,6 +15,9 @@ import {
 
 import {
   AfterSalesApplication,
+  AfterSalesPageResponse,
+  AfterSalesStatus,
+  AfterSalesType,
   CreateAfterSalesRequest,
   ReviewAfterSalesRequest
 } from '../types/after-sales.types';
@@ -28,6 +31,55 @@ export class AfterSalesService {
 
   private readonly apiUrl =
     '/api/after-sales';
+
+  search(
+    applicationNo: string,
+    orderNo: string,
+    customerNo: string,
+    type: AfterSalesType | '',
+    status: AfterSalesStatus | '',
+    page: number,
+    size: number
+  ): Observable<AfterSalesPageResponse> {
+    let params = new HttpParams()
+      .set('page', page)
+      .set('size', size);
+
+    if (applicationNo.trim()) {
+      params = params.set(
+        'applicationNo',
+        applicationNo.trim()
+      );
+    }
+
+    if (orderNo.trim()) {
+      params = params.set(
+        'orderNo',
+        orderNo.trim()
+      );
+    }
+
+    if (customerNo.trim()) {
+      params = params.set(
+        'customerNo',
+        customerNo.trim()
+      );
+    }
+
+    if (type) {
+      params = params.set('type', type);
+    }
+
+    if (status) {
+      params = params.set('status', status);
+    }
+
+    return this.httpClient
+      .get<AfterSalesPageResponse>(
+        `${this.apiUrl}/search`,
+        { params }
+      );
+  }
 
   create(
     request: CreateAfterSalesRequest

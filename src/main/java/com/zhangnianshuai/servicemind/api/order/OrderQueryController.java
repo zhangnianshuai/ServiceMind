@@ -16,11 +16,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.zhangnianshuai.servicemind.api.order.dto.CreateOrderRequest;
 import com.zhangnianshuai.servicemind.api.order.dto.OrderDetailResponse;
+import com.zhangnianshuai.servicemind.api.order.dto.OrderPageResponse;
 import com.zhangnianshuai.servicemind.api.order.dto.OrderSummaryResponse;
 import com.zhangnianshuai.servicemind.application.order.OrderCommandService;
 import com.zhangnianshuai.servicemind.application.order.OrderQueryService;
+import com.zhangnianshuai.servicemind.domain.order.OrderStatus;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
@@ -79,6 +83,36 @@ public class OrderQueryController {
             .getOrdersByCustomerNo(customerNo);
     }
 
+    @GetMapping("/search")
+    public OrderPageResponse searchOrders(
+            @RequestParam(required = false)
+            @Size(max = 32)
+            String orderNo,
+
+            @RequestParam(required = false)
+            @Size(max = 32)
+            String customerNo,
+
+            @RequestParam(required = false)
+            OrderStatus status,
+
+            @RequestParam(defaultValue = "0")
+            @Min(0)
+            int page,
+
+            @RequestParam(defaultValue = "20")
+            @Min(1)
+            @Max(100)
+            int size) {
+
+        return orderQueryService.searchOrders(
+            orderNo,
+            customerNo,
+            status,
+            page,
+            size
+        );
+    }
     @PostMapping("/{orderNo}/pay")
     public OrderDetailResponse pay(
             @PathVariable

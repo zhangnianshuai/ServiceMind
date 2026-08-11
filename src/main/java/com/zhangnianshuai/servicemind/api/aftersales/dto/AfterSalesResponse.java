@@ -9,6 +9,8 @@ public record AfterSalesResponse(
 
     String applicationNo,
     String orderNo,
+    String customerNo,
+    String customerName,
     Long orderItemId,
     String sku,
     String productName,

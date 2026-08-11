@@ -16,7 +16,10 @@ import {
 import {
   CreateSupportTicketRequest,
   SupportTicket,
-  TicketPriority
+  SupportTicketPageResponse,
+  TicketCategory,
+  TicketPriority,
+  TicketStatus
 } from '../types/ticket.types';
 
 @Injectable({
@@ -28,6 +31,70 @@ export class TicketService {
 
   private readonly apiUrl =
     '/api/tickets';
+
+  search(
+    ticketNo: string,
+    customerNo: string,
+    assignedTo: string,
+    category: TicketCategory | '',
+    priority: TicketPriority | '',
+    status: TicketStatus | '',
+    page: number,
+    size: number
+  ): Observable<SupportTicketPageResponse> {
+    let params =
+      new HttpParams()
+        .set('page', page)
+        .set('size', size);
+
+    if (ticketNo.trim()) {
+      params = params.set(
+        'ticketNo',
+        ticketNo.trim()
+      );
+    }
+
+    if (customerNo.trim()) {
+      params = params.set(
+        'customerNo',
+        customerNo.trim()
+      );
+    }
+
+    if (assignedTo.trim()) {
+      params = params.set(
+        'assignedTo',
+        assignedTo.trim()
+      );
+    }
+
+    if (category) {
+      params = params.set(
+        'category',
+        category
+      );
+    }
+
+    if (priority) {
+      params = params.set(
+        'priority',
+        priority
+      );
+    }
+
+    if (status) {
+      params = params.set(
+        'status',
+        status
+      );
+    }
+
+    return this.httpClient
+      .get<SupportTicketPageResponse>(
+        `${this.apiUrl}/search`,
+        { params }
+      );
+  }
 
   create(
     request: CreateSupportTicketRequest

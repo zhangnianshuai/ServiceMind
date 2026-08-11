@@ -1,4 +1,5 @@
 <div class="orders-container">
+
   <mat-toolbar class="orders-header">
     <div class="title-section">
       <mat-icon>receipt_long</mat-icon>
@@ -6,14 +7,17 @@
       <div>
         <h1>订单中心</h1>
         <p>
-          创建订单、查询订单并管理订单生命周期
+          查看全部订单、筛选业务记录并管理订单生命周期
         </p>
       </div>
     </div>
   </mat-toolbar>
 
-  <mat-card class="create-card">
+  <mat-card
+    class="create-card"
+    *appAdminOnly>
     <mat-card-content>
+
       <div class="section-heading">
         <div class="heading-icon">
           <mat-icon>add_shopping_cart</mat-icon>
@@ -40,17 +44,7 @@
             matInput
             maxlength="32"
             formControlName="customerNo"
-            placeholder="例如：CUST-001">
-
-          @if (
-            createOrderForm.controls.customerNo.touched &&
-            createOrderForm.controls.customerNo
-              .hasError('required')
-          ) {
-            <mat-error>
-              请输入客户编号
-            </mat-error>
-          }
+            placeholder="例如：CUST-901">
         </mat-form-field>
 
         <div
@@ -91,16 +85,6 @@
                   maxlength="64"
                   formControlName="sku"
                   placeholder="输入真实商品 SKU">
-
-                @if (
-                  itemGroup.controls.sku.touched &&
-                  itemGroup.controls.sku
-                    .hasError('required')
-                ) {
-                  <mat-error>
-                    请输入商品 SKU
-                  </mat-error>
-                }
               </mat-form-field>
 
               <mat-form-field
@@ -113,15 +97,6 @@
                   type="number"
                   min="1"
                   formControlName="quantity">
-
-                @if (
-                  itemGroup.controls.quantity.touched &&
-                  itemGroup.controls.quantity.invalid
-                ) {
-                  <mat-error>
-                    数量至少为 1
-                  </mat-error>
-                }
               </mat-form-field>
 
               <button
@@ -146,9 +121,7 @@
           </button>
 
           @if (isCreating()) {
-            <mat-spinner diameter="22">
-            </mat-spinner>
-
+            <mat-spinner diameter="22"></mat-spinner>
             <span>正在创建订单...</span>
           }
         </div>
@@ -170,115 +143,243 @@
     </mat-card-content>
   </mat-card>
 
-  <div class="search-grid">
-    <mat-card class="search-card">
-      <mat-card-content>
-        <div class="section-heading compact">
-          <mat-icon>person_search</mat-icon>
+  <mat-card class="filter-card">
+    <mat-card-content>
 
-          <div>
-            <h2>按客户查询</h2>
-            <p>
-              查看指定客户的全部订单
-            </p>
-          </div>
+      <div class="list-heading">
+        <div>
+          <h2>订单列表</h2>
+          <p>
+            默认显示全部订单，可按订单号、客户编号和状态筛选
+          </p>
         </div>
 
-        <form
-          class="search-form"
-          [formGroup]="customerSearchForm"
-          (ngSubmit)="searchByCustomer()">
+        <button
+          mat-icon-button
+          type="button"
+          matTooltip="刷新订单"
+          [disabled]="isListLoading()"
+          (click)="refreshOrders()">
+          <mat-icon>refresh</mat-icon>
+        </button>
+      </div>
 
-          <mat-form-field appearance="outline">
-            <mat-label>客户编号</mat-label>
+      <form
+        class="filter-form"
+        [formGroup]="filterForm"
+        (ngSubmit)="applyFilters()">
 
-            <input
-              matInput
-              maxlength="32"
-              formControlName="customerNo"
-              placeholder="例如：CUST-001">
-          </mat-form-field>
+        <mat-form-field appearance="outline">
+          <mat-label>订单编号</mat-label>
+          <input
+            matInput
+            maxlength="32"
+            formControlName="orderNo"
+            placeholder="例如：ORD-20260926">
+        </mat-form-field>
 
-          <div class="search-actions">
-            <button
-              mat-button
-              type="button"
-              [disabled]="isCustomerSearching()"
-              (click)="clearCustomerSearch()">
-              清空
-            </button>
+        <mat-form-field appearance="outline">
+          <mat-label>客户编号</mat-label>
+          <input
+            matInput
+            maxlength="32"
+            formControlName="customerNo"
+            placeholder="例如：CUST-901">
+        </mat-form-field>
 
-            <button
-              mat-flat-button
-              type="submit"
-              [disabled]="isCustomerSearching()">
-              <mat-icon>search</mat-icon>
-              查询订单
-            </button>
-          </div>
-        </form>
+        <mat-form-field appearance="outline">
+          <mat-label>订单状态</mat-label>
+          <mat-select formControlName="status">
+            <mat-option value="">
+              全部状态
+            </mat-option>
 
-        @if (customerError()) {
-          <div class="feedback error-feedback">
-            <mat-icon>error_outline</mat-icon>
-            <span>{{ customerError() }}</span>
-          </div>
-        }
-      </mat-card-content>
-    </mat-card>
+            @for (
+              status of statuses;
+              track status
+            ) {
+              <mat-option [value]="status">
+                {{ statusLabel(status) }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
 
-    <mat-card class="search-card">
-      <mat-card-content>
-        <div class="section-heading compact">
-          <mat-icon>manage_search</mat-icon>
+        <div class="filter-actions">
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="isListLoading()"
+            (click)="resetFilters()">
+            <mat-icon>restart_alt</mat-icon>
+            重置
+          </button>
 
-          <div>
-            <h2>按订单号查询</h2>
-            <p>
-              查看一笔订单的完整详情
-            </p>
-          </div>
+          <button
+            mat-flat-button
+            type="submit"
+            [disabled]="isListLoading()">
+            <mat-icon>search</mat-icon>
+            查询
+          </button>
+        </div>
+      </form>
+
+      @if (listError()) {
+        <div class="feedback error-feedback">
+          <mat-icon>error_outline</mat-icon>
+          <span>{{ listError() }}</span>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <mat-card class="orders-card">
+    <mat-card-content>
+
+      <div class="list-heading">
+        <div>
+          <h2>全部订单</h2>
+          <p>
+            共 {{ totalElements() }} 笔订单
+            @if (totalPages() > 0) {
+              · 第 {{ pageIndex() + 1 }} / {{ totalPages() }} 页
+            }
+          </p>
         </div>
 
-        <form
-          class="search-form"
-          [formGroup]="orderSearchForm"
-          (ngSubmit)="searchByOrderNo()">
-
-          <mat-form-field appearance="outline">
-            <mat-label>订单编号</mat-label>
-
-            <input
-              matInput
-              maxlength="32"
-              formControlName="orderNo"
-              placeholder="输入订单编号">
-          </mat-form-field>
-
-          <div class="search-actions">
-            <button
-              mat-flat-button
-              type="submit"
-              [disabled]="isOrderLoading()">
-              <mat-icon>search</mat-icon>
-              查看订单
-            </button>
-          </div>
-        </form>
-
-        @if (orderError()) {
-          <div class="feedback error-feedback">
-            <mat-icon>error_outline</mat-icon>
-            <span>{{ orderError() }}</span>
+        @if (isListLoading()) {
+          <div class="loading-inline">
+            <mat-spinner diameter="22"></mat-spinner>
+            <span>正在加载...</span>
           </div>
         }
-      </mat-card-content>
-    </mat-card>
-  </div>
+      </div>
+
+      @if (
+        !isListLoading() &&
+        orders().length === 0 &&
+        !listError()
+      ) {
+        <div class="inline-empty">
+          <mat-icon>inbox</mat-icon>
+          <strong>没有符合条件的订单</strong>
+          <span>可以调整筛选条件后重新查询。</span>
+        </div>
+      } @else {
+        <div class="table-container">
+          <table
+            mat-table
+            [dataSource]="orders()">
+
+            <ng-container matColumnDef="orderNo">
+              <th mat-header-cell *matHeaderCellDef>
+                订单编号
+              </th>
+              <td mat-cell *matCellDef="let order">
+                <strong>{{ order.orderNo }}</strong>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="customer">
+              <th mat-header-cell *matHeaderCellDef>
+                客户
+              </th>
+              <td mat-cell *matCellDef="let order">
+                <div class="customer-cell">
+                  <strong>{{ order.customerName }}</strong>
+                  <span>{{ order.customerNo }}</span>
+                </div>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>
+                状态
+              </th>
+              <td mat-cell *matCellDef="let order">
+                <mat-chip
+                  [ngClass]="statusClass(order.status)">
+                  {{ statusLabel(order.status) }}
+                </mat-chip>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="totalAmount">
+              <th mat-header-cell *matHeaderCellDef>
+                金额
+              </th>
+              <td mat-cell *matCellDef="let order">
+                ¥{{ order.totalAmount | number:'1.2-2' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="orderedAt">
+              <th mat-header-cell *matHeaderCellDef>
+                下单时间
+              </th>
+              <td mat-cell *matCellDef="let order">
+                {{
+                  order.orderedAt |
+                    date:'yyyy-MM-dd HH:mm'
+                }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="actions">
+              <th mat-header-cell *matHeaderCellDef>
+                操作
+              </th>
+              <td mat-cell *matCellDef="let order">
+                <button
+                  mat-icon-button
+                  type="button"
+                  matTooltip="查看订单详情"
+                  [disabled]="isOrderLoading()"
+                  (click)="openOrder(order)">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+              </td>
+            </ng-container>
+
+            <tr
+              mat-header-row
+              *matHeaderRowDef="orderColumns">
+            </tr>
+
+            <tr
+              mat-row
+              *matRowDef="
+                let row;
+                columns: orderColumns
+              ">
+            </tr>
+          </table>
+        </div>
+
+        <mat-paginator
+          [length]="totalElements()"
+          [pageIndex]="pageIndex()"
+          [pageSize]="pageSize()"
+          [pageSizeOptions]="[10, 20, 50]"
+          [showFirstLastButtons]="true"
+          (page)="onPage($event)">
+        </mat-paginator>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  @if (orderError()) {
+    <div class="feedback error-feedback">
+      <mat-icon>error_outline</mat-icon>
+      <span>{{ orderError() }}</span>
+    </div>
+  }
 
   @if (selectedOrder(); as order) {
     <mat-card class="detail-card">
       <mat-card-content>
+
         <div class="detail-header">
           <div>
             <h2>订单详情</h2>
@@ -297,17 +398,12 @@
         <div class="summary-grid">
           <div>
             <span>客户</span>
-            <strong>
-              {{ order.customerName }}
-            </strong>
-            <small>
-              {{ order.customerNo }}
-            </small>
+            <strong>{{ order.customerName }}</strong>
+            <small>{{ order.customerNo }}</small>
           </div>
 
           <div>
             <span>订单状态</span>
-
             <mat-chip
               [ngClass]="statusClass(order.status)">
               {{ statusLabel(order.status) }}
@@ -316,7 +412,6 @@
 
           <div>
             <span>订单金额</span>
-
             <strong class="amount">
               ¥{{ order.totalAmount | number:'1.2-2' }}
             </strong>
@@ -324,7 +419,6 @@
 
           <div>
             <span>下单时间</span>
-
             <strong>
               {{
                 order.orderedAt |
@@ -334,7 +428,9 @@
           </div>
         </div>
 
-        <div class="order-actions-panel">
+        <div
+          class="order-actions-panel"
+          *appAdminOnly>
           <div>
             <strong>订单操作</strong>
             <span>
@@ -388,8 +484,7 @@
             }
 
             @if (isStateChanging()) {
-              <mat-spinner diameter="22">
-              </mat-spinner>
+              <mat-spinner diameter="22"></mat-spinner>
             }
           </div>
         </div>
@@ -413,10 +508,8 @@
             class="timeline-item"
             [class.reached]="order.orderedAt">
             <mat-icon>shopping_cart</mat-icon>
-
             <div>
               <strong>创建订单</strong>
-
               <span>
                 {{
                   order.orderedAt |
@@ -430,10 +523,8 @@
             class="timeline-item"
             [class.reached]="order.paidAt">
             <mat-icon>payments</mat-icon>
-
             <div>
               <strong>完成支付</strong>
-
               <span>
                 @if (order.paidAt) {
                   {{
@@ -451,10 +542,8 @@
             class="timeline-item"
             [class.reached]="order.shippedAt">
             <mat-icon>local_shipping</mat-icon>
-
             <div>
               <strong>商品发货</strong>
-
               <span>
                 @if (order.shippedAt) {
                   {{
@@ -472,10 +561,8 @@
             class="timeline-item"
             [class.reached]="order.completedAt">
             <mat-icon>task_alt</mat-icon>
-
             <div>
               <strong>订单完成</strong>
-
               <span>
                 @if (order.completedAt) {
                   {{
@@ -493,7 +580,6 @@
         <div class="items-heading">
           <div>
             <h3>商品明细</h3>
-
             <p>
               共 {{ order.items.length }} 个订单项
             </p>
@@ -509,7 +595,6 @@
               <th mat-header-cell *matHeaderCellDef>
                 SKU
               </th>
-
               <td mat-cell *matCellDef="let item">
                 <span class="sku">
                   {{ item.sku }}
@@ -521,7 +606,6 @@
               <th mat-header-cell *matHeaderCellDef>
                 商品
               </th>
-
               <td mat-cell *matCellDef="let item">
                 {{ item.productName }}
               </td>
@@ -531,7 +615,6 @@
               <th mat-header-cell *matHeaderCellDef>
                 单价
               </th>
-
               <td mat-cell *matCellDef="let item">
                 ¥{{ item.unitPrice | number:'1.2-2' }}
               </td>
@@ -541,7 +624,6 @@
               <th mat-header-cell *matHeaderCellDef>
                 数量
               </th>
-
               <td mat-cell *matCellDef="let item">
                 {{ item.quantity }}
               </td>
@@ -551,7 +633,6 @@
               <th mat-header-cell *matHeaderCellDef>
                 小计
               </th>
-
               <td mat-cell *matCellDef="let item">
                 <strong>
                   ¥{{ item.lineAmount | number:'1.2-2' }}
@@ -577,136 +658,4 @@
     </mat-card>
   }
 
-  @if (customerOrders().length > 0) {
-    <mat-card class="orders-card">
-      <mat-card-content>
-        <div class="list-heading">
-          <div>
-            <h2>客户订单</h2>
-
-            <p>
-              共 {{ customerOrders().length }} 笔订单
-            </p>
-          </div>
-        </div>
-
-        <div class="table-container">
-          <table
-            mat-table
-            [dataSource]="customerOrders()">
-
-            <ng-container matColumnDef="orderNo">
-              <th mat-header-cell *matHeaderCellDef>
-                订单编号
-              </th>
-
-              <td mat-cell *matCellDef="let order">
-                <strong>
-                  {{ order.orderNo }}
-                </strong>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="customer">
-              <th mat-header-cell *matHeaderCellDef>
-                客户
-              </th>
-
-              <td mat-cell *matCellDef="let order">
-                <div class="customer-cell">
-                  <strong>
-                    {{ order.customerName }}
-                  </strong>
-
-                  <span>
-                    {{ order.customerNo }}
-                  </span>
-                </div>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>
-                状态
-              </th>
-
-              <td mat-cell *matCellDef="let order">
-                <mat-chip
-                  [ngClass]="statusClass(order.status)">
-                  {{ statusLabel(order.status) }}
-                </mat-chip>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="totalAmount">
-              <th mat-header-cell *matHeaderCellDef>
-                金额
-              </th>
-
-              <td mat-cell *matCellDef="let order">
-                ¥{{ order.totalAmount | number:'1.2-2' }}
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="orderedAt">
-              <th mat-header-cell *matHeaderCellDef>
-                下单时间
-              </th>
-
-              <td mat-cell *matCellDef="let order">
-                {{
-                  order.orderedAt |
-                    date:'yyyy-MM-dd HH:mm'
-                }}
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="actions">
-              <th mat-header-cell *matHeaderCellDef>
-                操作
-              </th>
-
-              <td mat-cell *matCellDef="let order">
-                <button
-                  mat-icon-button
-                  type="button"
-                  matTooltip="查看订单详情"
-                  (click)="openOrder(order)">
-                  <mat-icon>visibility</mat-icon>
-                </button>
-              </td>
-            </ng-container>
-
-            <tr
-              mat-header-row
-              *matHeaderRowDef="orderColumns">
-            </tr>
-
-            <tr
-              mat-row
-              *matRowDef="
-                let row;
-                columns: orderColumns
-              ">
-            </tr>
-          </table>
-        </div>
-      </mat-card-content>
-    </mat-card>
-  } @else if (
-    customerSearchCompleted() &&
-    !customerError()
-  ) {
-    <mat-card class="empty-card">
-      <mat-card-content>
-        <mat-icon>inbox</mat-icon>
-
-        <h3>该客户暂无订单</h3>
-
-        <p>
-          当前客户编号没有查询到订单记录。
-        </p>
-      </mat-card-content>
-    </mat-card>
-  }
 </div>
