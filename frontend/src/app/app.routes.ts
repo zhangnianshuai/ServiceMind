@@ -12,6 +12,10 @@ import {
   AfterSalesComponent
 } from './components/after-sales/after-sales.component';
 
+import {
+  TicketsComponent
+} from './components/tickets/tickets.component';
+
 export const routes: Routes = [
   {
     path: 'knowledge',
@@ -27,6 +31,11 @@ export const routes: Routes = [
     path: 'after-sales',
     component: AfterSalesComponent,
     title: '售后中心 - ServiceMind'
+  },
+  {
+    path: 'tickets',
+    component: TicketsComponent,
+    title: '客服工单 - ServiceMind'
   },
   {
     path: '',

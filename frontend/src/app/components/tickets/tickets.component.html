@@ -1,0 +1,621 @@
+<div class="tickets-container">
+
+  <mat-toolbar class="page-header">
+    <div class="page-title">
+      <mat-icon>confirmation_number</mat-icon>
+
+      <div>
+        <h1>客服工单</h1>
+        <p>
+          创建、分配、跟踪和解决客户问题
+        </p>
+      </div>
+    </div>
+  </mat-toolbar>
+
+  <mat-card>
+    <mat-card-content>
+
+      <div class="section-heading">
+        <mat-icon>add_task</mat-icon>
+
+        <div>
+          <h2>创建工单</h2>
+          <p>
+            可关联订单和售后申请
+          </p>
+        </div>
+      </div>
+
+      <form
+        class="create-form"
+        [formGroup]="createForm"
+        (ngSubmit)="createTicket()">
+
+        <mat-form-field appearance="outline">
+          <mat-label>客户编号</mat-label>
+
+          <input
+            matInput
+            formControlName="customerNo"
+            maxlength="32"
+            placeholder="例如：CUST-001">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>关联订单号（可选）</mat-label>
+
+          <input
+            matInput
+            formControlName="orderNo"
+            maxlength="32">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>售后申请号（可选）</mat-label>
+
+          <input
+            matInput
+            formControlName="afterSalesApplicationNo"
+            maxlength="32">
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>工单类别</mat-label>
+
+          <mat-select formControlName="category">
+            @for (
+              category of categories;
+              track category
+            ) {
+              <mat-option [value]="category">
+                {{ categoryLabel(category) }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>优先级</mat-label>
+
+          <mat-select formControlName="priority">
+            @for (
+              priority of priorities;
+              track priority
+            ) {
+              <mat-option [value]="priority">
+                {{ priorityLabel(priority) }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>来源</mat-label>
+
+          <mat-select formControlName="source">
+            @for (
+              source of sources;
+              track source
+            ) {
+              <mat-option [value]="source">
+                {{ sourceLabel(source) }}
+              </mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="outline"
+          class="wide-field">
+
+          <mat-label>工单主题</mat-label>
+
+          <input
+            matInput
+            maxlength="200"
+            formControlName="subject">
+        </mat-form-field>
+
+        <mat-form-field
+          appearance="outline"
+          class="wide-field">
+
+          <mat-label>问题描述</mat-label>
+
+          <textarea
+            matInput
+            rows="4"
+            maxlength="2000"
+            formControlName="description">
+          </textarea>
+        </mat-form-field>
+
+        <div class="form-actions">
+          <button
+            mat-flat-button
+            type="submit"
+            [disabled]="isCreating()">
+            <mat-icon>add_task</mat-icon>
+            创建工单
+          </button>
+
+          @if (isCreating()) {
+            <mat-spinner diameter="22">
+            </mat-spinner>
+          }
+        </div>
+      </form>
+
+      @if (createSuccess()) {
+        <div class="feedback success">
+          <mat-icon>check_circle</mat-icon>
+          {{ createSuccess() }}
+        </div>
+      }
+
+      @if (createError()) {
+        <div class="feedback error">
+          <mat-icon>error_outline</mat-icon>
+          {{ createError() }}
+        </div>
+      }
+
+    </mat-card-content>
+  </mat-card>
+
+  <div class="search-grid">
+
+    <mat-card>
+      <mat-card-content>
+
+        <div class="section-heading">
+          <mat-icon>person_search</mat-icon>
+
+          <div>
+            <h2>客户工单</h2>
+            <p>查看客户全部工单</p>
+          </div>
+        </div>
+
+        <form
+          class="search-form"
+          [formGroup]="customerSearchForm"
+          (ngSubmit)="searchByCustomer()">
+
+          <mat-form-field appearance="outline">
+            <mat-label>客户编号</mat-label>
+
+            <input
+              matInput
+              formControlName="customerNo"
+              placeholder="CUST-001">
+          </mat-form-field>
+
+          <button
+            mat-flat-button
+            type="submit"
+            [disabled]="isSearching()">
+            <mat-icon>search</mat-icon>
+            查询
+          </button>
+        </form>
+
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-content>
+
+        <div class="section-heading">
+          <mat-icon>manage_search</mat-icon>
+
+          <div>
+            <h2>工单号查询</h2>
+            <p>直接打开指定工单</p>
+          </div>
+        </div>
+
+        <form
+          class="search-form"
+          [formGroup]="ticketSearchForm"
+          (ngSubmit)="searchByTicketNo()">
+
+          <mat-form-field appearance="outline">
+            <mat-label>工单编号</mat-label>
+
+            <input
+              matInput
+              formControlName="ticketNo"
+              placeholder="TK...">
+          </mat-form-field>
+
+          <button
+            mat-flat-button
+            type="submit"
+            [disabled]="isSearching()">
+            <mat-icon>search</mat-icon>
+            查询
+          </button>
+        </form>
+
+      </mat-card-content>
+    </mat-card>
+
+  </div>
+
+  @if (searchError()) {
+    <div class="feedback error">
+      <mat-icon>error_outline</mat-icon>
+      {{ searchError() }}
+    </div>
+  }
+
+  @if (selectedTicket(); as ticket) {
+    <mat-card class="detail-card">
+      <mat-card-content>
+
+        <div class="detail-heading">
+          <div>
+            <h2>{{ ticket.subject }}</h2>
+            <p>{{ ticket.ticketNo }}</p>
+          </div>
+
+          <div class="chips">
+            <mat-chip>
+              {{ statusLabel(ticket.status) }}
+            </mat-chip>
+
+            <mat-chip>
+              {{ priorityLabel(ticket.priority) }}
+            </mat-chip>
+          </div>
+        </div>
+
+        <div class="detail-grid">
+
+          <div>
+            <span>客户</span>
+            <strong>{{ ticket.customerName }}</strong>
+            <small>{{ ticket.customerNo }}</small>
+          </div>
+
+          <div>
+            <span>类别</span>
+            <strong>
+              {{ categoryLabel(ticket.category) }}
+            </strong>
+          </div>
+
+          <div>
+            <span>来源</span>
+            <strong>
+              {{ sourceLabel(ticket.source) }}
+            </strong>
+          </div>
+
+          <div>
+            <span>负责人</span>
+            <strong>
+              {{ ticket.assignedTo || '未分配' }}
+            </strong>
+          </div>
+
+          <div>
+            <span>关联订单</span>
+            <strong>
+              {{ ticket.orderNo || '—' }}
+            </strong>
+          </div>
+
+          <div>
+            <span>关联售后</span>
+            <strong>
+              {{
+                ticket.afterSalesApplicationNo ||
+                '—'
+              }}
+            </strong>
+          </div>
+
+        </div>
+
+        <div class="description-panel">
+          <strong>客户问题</strong>
+          <p>{{ ticket.description }}</p>
+        </div>
+
+        @if (canManage(ticket)) {
+          <div class="management-grid">
+
+            <form
+              [formGroup]="assignmentForm"
+              (ngSubmit)="assign()">
+
+              <mat-form-field appearance="outline">
+                <mat-label>负责人</mat-label>
+
+                <input
+                  matInput
+                  maxlength="100"
+                  formControlName="assignedTo"
+                  placeholder="例如：agent-li">
+              </mat-form-field>
+
+              <button
+                mat-stroked-button
+                type="submit"
+                [disabled]="isChanging()">
+                分配
+              </button>
+            </form>
+
+            <form
+              [formGroup]="priorityForm"
+              (ngSubmit)="changePriority()">
+
+              <mat-form-field appearance="outline">
+                <mat-label>优先级</mat-label>
+
+                <mat-select
+                  formControlName="priority">
+
+                  @for (
+                    priority of priorities;
+                    track priority
+                  ) {
+                    <mat-option
+                      [value]="priority">
+                      {{
+                        priorityLabel(priority)
+                      }}
+                    </mat-option>
+                  }
+
+                </mat-select>
+              </mat-form-field>
+
+              <button
+                mat-stroked-button
+                type="submit"
+                [disabled]="isChanging()">
+                更新优先级
+              </button>
+            </form>
+
+          </div>
+        }
+
+        @if (canResolve(ticket.status)) {
+          <form
+            class="resolution-form"
+            [formGroup]="resolutionForm"
+            (ngSubmit)="resolve()">
+
+            <mat-form-field appearance="outline">
+              <mat-label>解决方案</mat-label>
+
+              <textarea
+                matInput
+                rows="3"
+                maxlength="2000"
+                formControlName="resolution">
+              </textarea>
+            </mat-form-field>
+
+            <button
+              mat-flat-button
+              type="submit"
+              [disabled]="isChanging()">
+              <mat-icon>task_alt</mat-icon>
+              标记已解决
+            </button>
+
+          </form>
+        }
+
+        <div class="state-actions">
+
+          @if (canStartProgress(ticket.status)) {
+            <button
+              mat-flat-button
+              type="button"
+              [disabled]="isChanging()"
+              (click)="startProgress()">
+              <mat-icon>play_arrow</mat-icon>
+              开始处理
+            </button>
+          }
+
+          @if (
+            canWaitForCustomer(ticket.status)
+          ) {
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="isChanging()"
+              (click)="waitForCustomer()">
+              <mat-icon>hourglass_top</mat-icon>
+              等待客户
+            </button>
+          }
+
+          @if (canReopen(ticket.status)) {
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="isChanging()"
+              (click)="reopen()">
+              <mat-icon>refresh</mat-icon>
+              重新打开
+            </button>
+          }
+
+          @if (canClose(ticket.status)) {
+            <button
+              mat-flat-button
+              type="button"
+              [disabled]="isChanging()"
+              (click)="close()">
+              <mat-icon>lock</mat-icon>
+              关闭工单
+            </button>
+          }
+
+          @if (isChanging()) {
+            <mat-spinner diameter="22">
+            </mat-spinner>
+          }
+
+        </div>
+
+        @if (actionSuccess()) {
+          <div class="feedback success">
+            <mat-icon>check_circle</mat-icon>
+            {{ actionSuccess() }}
+          </div>
+        }
+
+        @if (actionError()) {
+          <div class="feedback error">
+            <mat-icon>error_outline</mat-icon>
+            {{ actionError() }}
+          </div>
+        }
+
+        @if (ticket.resolution) {
+          <div class="resolution-result">
+            <strong>解决方案</strong>
+            <p>{{ ticket.resolution }}</p>
+          </div>
+        }
+
+        <div class="timeline">
+
+          <div>
+            <span>创建时间</span>
+            <strong>
+              {{
+                ticket.openedAt |
+                  date:'yyyy-MM-dd HH:mm'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>首次响应</span>
+            <strong>
+              @if (ticket.firstRespondedAt) {
+                {{
+                  ticket.firstRespondedAt |
+                    date:'yyyy-MM-dd HH:mm'
+                }}
+              } @else {
+                —
+              }
+            </strong>
+          </div>
+
+          <div>
+            <span>解决时间</span>
+            <strong>
+              @if (ticket.resolvedAt) {
+                {{
+                  ticket.resolvedAt |
+                    date:'yyyy-MM-dd HH:mm'
+                }}
+              } @else {
+                —
+              }
+            </strong>
+          </div>
+
+          <div>
+            <span>关闭时间</span>
+            <strong>
+              @if (ticket.closedAt) {
+                {{
+                  ticket.closedAt |
+                    date:'yyyy-MM-dd HH:mm'
+                }}
+              } @else {
+                —
+              }
+            </strong>
+          </div>
+
+        </div>
+
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (tickets().length > 0) {
+    <mat-card>
+      <mat-card-content>
+
+        <div class="section-heading">
+          <mat-icon>list_alt</mat-icon>
+
+          <div>
+            <h2>客户工单列表</h2>
+            <p>
+              共 {{ tickets().length }} 条
+            </p>
+          </div>
+        </div>
+
+        <div class="ticket-list">
+
+          @for (
+            ticket of tickets();
+            track ticket.ticketNo
+          ) {
+            <button
+              type="button"
+              class="ticket-row"
+              (click)="selectTicket(ticket)">
+
+              <div>
+                <strong>{{ ticket.subject }}</strong>
+
+                <span>
+                  {{ ticket.ticketNo }}
+                  ·
+                  {{ categoryLabel(ticket.category) }}
+                </span>
+              </div>
+
+              <div class="ticket-row-meta">
+                <mat-chip>
+                  {{ statusLabel(ticket.status) }}
+                </mat-chip>
+
+                <span>
+                  {{ priorityLabel(ticket.priority) }}
+                </span>
+              </div>
+
+            </button>
+          }
+
+        </div>
+
+      </mat-card-content>
+    </mat-card>
+  } @else if (
+    searchCompleted() &&
+    !searchError()
+  ) {
+    <mat-card class="empty-card">
+      <mat-card-content>
+        <mat-icon>inbox</mat-icon>
+        <h3>暂无工单</h3>
+        <p>
+          该客户目前没有客服工单。
+        </p>
+      </mat-card-content>
+    </mat-card>
+  }
+
+</div>
