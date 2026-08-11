@@ -1,5 +1,6 @@
 <div class="app-shell">
   <aside class="sidebar">
+
     <div class="brand">
       <div class="brand-logo">
         <mat-icon>support_agent</mat-icon>
@@ -12,11 +13,13 @@
     </div>
 
     <nav class="navigation">
+
       <a
         routerLink="/knowledge"
         routerLinkActive="active"
         class="nav-item"
         matTooltip="知识库管理">
+
         <mat-icon>menu_book</mat-icon>
 
         <div>
@@ -34,35 +37,43 @@
         routerLinkActive="active"
         class="nav-item"
         matTooltip="订单中心">
+
         <mat-icon>receipt_long</mat-icon>
 
         <div>
           <strong>订单</strong>
-          <span>订单查询与详情</span>
+          <span>订单查询与管理</span>
+        </div>
+      </a>
+
+      <a
+        routerLink="/after-sales"
+        routerLinkActive="active"
+        class="nav-item"
+        matTooltip="售后中心">
+
+        <mat-icon>assignment_return</mat-icon>
+
+        <div>
+          <strong>售后</strong>
+          <span>退换货与维修管理</span>
         </div>
       </a>
 
       <div
         class="nav-item disabled"
         matTooltip="下一阶段接入">
-        <mat-icon>assignment_return</mat-icon>
 
-        <div>
-          <strong>售后</strong>
-          <span>即将接入</span>
-        </div>
-      </div>
-
-      <div
-        class="nav-item disabled"
-        matTooltip="后续接入">
-        <mat-icon>confirmation_number</mat-icon>
+        <mat-icon>
+          confirmation_number
+        </mat-icon>
 
         <div>
           <strong>工单</strong>
           <span>即将接入</span>
         </div>
       </div>
+
     </nav>
 
     <div class="sidebar-footer">
@@ -75,9 +86,11 @@
         </div>
       </div>
     </div>
+
   </aside>
 
   <main class="workspace">
+
     <section class="page-content">
       <router-outlet></router-outlet>
     </section>
@@ -85,5 +98,6 @@
     <aside class="assistant-panel">
       <app-chat></app-chat>
     </aside>
+
   </main>
 </div>

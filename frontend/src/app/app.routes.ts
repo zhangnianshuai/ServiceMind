@@ -3,9 +3,14 @@ import { Routes } from '@angular/router';
 import {
   KnowledgeDocumentsComponent
 } from './components/knowledge-documents/knowledge-documents.component';
+
 import {
   OrdersComponent
 } from './components/orders/orders.component';
+
+import {
+  AfterSalesComponent
+} from './components/after-sales/after-sales.component';
 
 export const routes: Routes = [
   {
@@ -17,6 +22,11 @@ export const routes: Routes = [
     path: 'orders',
     component: OrdersComponent,
     title: '订单中心 - ServiceMind'
+  },
+  {
+    path: 'after-sales',
+    component: AfterSalesComponent,
+    title: '售后中心 - ServiceMind'
   },
   {
     path: '',

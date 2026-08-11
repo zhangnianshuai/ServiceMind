@@ -1,0 +1,572 @@
+<div class="after-sales-container">
+
+  <mat-toolbar class="page-header">
+    <div class="page-title">
+      <mat-icon>assignment_return</mat-icon>
+
+      <div>
+        <h1>售后中心</h1>
+        <p>
+          管理退货、换货和维修申请
+        </p>
+      </div>
+    </div>
+  </mat-toolbar>
+
+  <mat-card>
+    <mat-card-content>
+      <div class="section-heading">
+        <mat-icon>shopping_bag</mat-icon>
+
+        <div>
+          <h2>发起售后申请</h2>
+          <p>
+            先加载订单，再选择具体订单项
+          </p>
+        </div>
+      </div>
+
+      <form
+        class="load-order-form"
+        [formGroup]="orderLoadForm"
+        (ngSubmit)="loadOrder()">
+
+        <mat-form-field appearance="outline">
+          <mat-label>订单编号</mat-label>
+
+          <input
+            matInput
+            maxlength="32"
+            formControlName="orderNo"
+            placeholder="输入订单编号">
+        </mat-form-field>
+
+        <button
+          mat-flat-button
+          type="submit"
+          [disabled]="isOrderLoading()">
+          <mat-icon>search</mat-icon>
+          加载订单
+        </button>
+
+        @if (isOrderLoading()) {
+          <mat-spinner diameter="22">
+          </mat-spinner>
+        }
+      </form>
+
+      @if (orderError()) {
+        <div class="feedback error">
+          <mat-icon>error_outline</mat-icon>
+          {{ orderError() }}
+        </div>
+      }
+
+      @if (loadedOrder(); as order) {
+        <div class="order-summary">
+          <div>
+            <span>订单</span>
+            <strong>{{ order.orderNo }}</strong>
+          </div>
+
+          <div>
+            <span>客户</span>
+            <strong>{{ order.customerName }}</strong>
+          </div>
+
+          <div>
+            <span>状态</span>
+            <strong>{{ order.status }}</strong>
+          </div>
+        </div>
+
+        @if (eligibleTypes(order).length > 0) {
+          <form
+            class="create-form"
+            [formGroup]="createForm"
+            (ngSubmit)="createApplication()">
+
+            <mat-form-field appearance="outline">
+              <mat-label>订单商品</mat-label>
+
+              <mat-select formControlName="orderItemId">
+                @for (
+                  item of order.items;
+                  track item.orderItemId
+                ) {
+                  <mat-option
+                    [value]="item.orderItemId">
+                    {{ item.productName }}
+                    · {{ item.sku }}
+                    · 已购 {{ item.quantity }}
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>售后类型</mat-label>
+
+              <mat-select formControlName="type">
+                @for (
+                  type of eligibleTypes(order);
+                  track type
+                ) {
+                  <mat-option [value]="type">
+                    {{ typeLabel(type) }}
+                  </mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>申请数量</mat-label>
+
+              <input
+                matInput
+                type="number"
+                min="1"
+                formControlName="requestedQuantity">
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>申请原因</mat-label>
+
+              <input
+                matInput
+                maxlength="200"
+                formControlName="reason">
+            </mat-form-field>
+
+            <mat-form-field
+              appearance="outline"
+              class="description-field">
+
+              <mat-label>问题描述</mat-label>
+
+              <textarea
+                matInput
+                rows="3"
+                maxlength="1000"
+                formControlName="description">
+              </textarea>
+            </mat-form-field>
+
+            <div class="form-actions">
+              <button
+                mat-flat-button
+                type="submit"
+                [disabled]="isCreating()">
+                <mat-icon>send</mat-icon>
+                提交售后申请
+              </button>
+
+              @if (isCreating()) {
+                <mat-spinner diameter="22">
+                </mat-spinner>
+              }
+            </div>
+          </form>
+        } @else {
+          <div class="feedback warning">
+            <mat-icon>info</mat-icon>
+
+            当前订单状态不支持创建售后申请。
+            退货/换货要求订单已发货或已完成；
+            维修要求订单已完成。
+          </div>
+        }
+
+        @if (createSuccess()) {
+          <div class="feedback success">
+            <mat-icon>check_circle</mat-icon>
+            {{ createSuccess() }}
+          </div>
+        }
+
+        @if (createError()) {
+          <div class="feedback error">
+            <mat-icon>error_outline</mat-icon>
+            {{ createError() }}
+          </div>
+        }
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <div class="search-grid">
+    <mat-card>
+      <mat-card-content>
+        <div class="section-heading">
+          <mat-icon>person_search</mat-icon>
+
+          <div>
+            <h2>客户售后记录</h2>
+            <p>按客户编号查询全部申请</p>
+          </div>
+        </div>
+
+        <form
+          class="search-form"
+          [formGroup]="customerSearchForm"
+          (ngSubmit)="searchByCustomer()">
+
+          <mat-form-field appearance="outline">
+            <mat-label>客户编号</mat-label>
+
+            <input
+              matInput
+              maxlength="32"
+              formControlName="customerNo"
+              placeholder="例如：CUST-001">
+          </mat-form-field>
+
+          <button
+            mat-flat-button
+            type="submit"
+            [disabled]="isSearching()">
+            <mat-icon>search</mat-icon>
+            查询
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-content>
+        <div class="section-heading">
+          <mat-icon>manage_search</mat-icon>
+
+          <div>
+            <h2>申请详情查询</h2>
+            <p>按售后申请号直接查询</p>
+          </div>
+        </div>
+
+        <form
+          class="search-form"
+          [formGroup]="applicationSearchForm"
+          (ngSubmit)="searchByApplicationNo()">
+
+          <mat-form-field appearance="outline">
+            <mat-label>售后申请号</mat-label>
+
+            <input
+              matInput
+              maxlength="32"
+              formControlName="applicationNo"
+              placeholder="例如：AS...">
+          </mat-form-field>
+
+          <button
+            mat-flat-button
+            type="submit"
+            [disabled]="isSearching()">
+            <mat-icon>search</mat-icon>
+            查询
+          </button>
+        </form>
+      </mat-card-content>
+    </mat-card>
+  </div>
+
+  @if (searchError()) {
+    <div class="feedback error">
+      <mat-icon>error_outline</mat-icon>
+      {{ searchError() }}
+    </div>
+  }
+
+  @if (selectedApplication(); as application) {
+    <mat-card class="detail-card">
+      <mat-card-content>
+
+        <div class="detail-heading">
+          <div>
+            <h2>售后申请详情</h2>
+            <p>{{ application.applicationNo }}</p>
+          </div>
+
+          <mat-chip>
+            {{ statusLabel(application.status) }}
+          </mat-chip>
+        </div>
+
+        <div class="detail-grid">
+          <div>
+            <span>关联订单</span>
+            <strong>{{ application.orderNo }}</strong>
+          </div>
+
+          <div>
+            <span>商品</span>
+            <strong>{{ application.productName }}</strong>
+            <small>{{ application.sku }}</small>
+          </div>
+
+          <div>
+            <span>售后类型</span>
+            <strong>
+              {{ typeLabel(application.type) }}
+            </strong>
+          </div>
+
+          <div>
+            <span>申请数量</span>
+            <strong>
+              {{ application.requestedQuantity }}
+            </strong>
+          </div>
+        </div>
+
+        <div class="reason-panel">
+          <strong>申请原因</strong>
+          <p>{{ application.reason }}</p>
+
+          @if (application.description) {
+            <strong>问题描述</strong>
+            <p>{{ application.description }}</p>
+          }
+        </div>
+
+        @if (
+          application.status === 'UNDER_REVIEW'
+        ) {
+          <mat-form-field
+            appearance="outline"
+            class="review-field">
+
+            <mat-label>审核意见</mat-label>
+
+            <textarea
+              matInput
+              rows="3"
+              maxlength="500"
+              [formControl]="reviewForm.controls.comment">
+            </textarea>
+
+            <mat-hint>
+              拒绝申请时审核意见必填
+            </mat-hint>
+          </mat-form-field>
+        }
+
+        <div class="state-actions">
+          @if (
+            canStartReview(application.status)
+          ) {
+            <button
+              mat-flat-button
+              type="button"
+              [disabled]="isChangingState()"
+              (click)="startReview()">
+              <mat-icon>fact_check</mat-icon>
+              开始审核
+            </button>
+          }
+
+          @if (canReview(application.status)) {
+            <button
+              mat-flat-button
+              type="button"
+              [disabled]="isChangingState()"
+              (click)="approve()">
+              <mat-icon>check</mat-icon>
+              审核通过
+            </button>
+
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="isChangingState()"
+              (click)="reject()">
+              <mat-icon>close</mat-icon>
+              拒绝申请
+            </button>
+          }
+
+          @if (
+            canStartProcessing(application.status)
+          ) {
+            <button
+              mat-flat-button
+              type="button"
+              [disabled]="isChangingState()"
+              (click)="startProcessing()">
+              <mat-icon>build</mat-icon>
+              开始处理
+            </button>
+          }
+
+          @if (canComplete(application.status)) {
+            <button
+              mat-flat-button
+              type="button"
+              [disabled]="isChangingState()"
+              (click)="complete()">
+              <mat-icon>task_alt</mat-icon>
+              完成售后
+            </button>
+          }
+
+          @if (canCancel(application.status)) {
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="isChangingState()"
+              (click)="cancel()">
+              <mat-icon>cancel</mat-icon>
+              取消申请
+            </button>
+          }
+
+          @if (isChangingState()) {
+            <mat-spinner diameter="22">
+            </mat-spinner>
+          }
+        </div>
+
+        @if (actionSuccess()) {
+          <div class="feedback success">
+            <mat-icon>check_circle</mat-icon>
+            {{ actionSuccess() }}
+          </div>
+        }
+
+        @if (actionError()) {
+          <div class="feedback error">
+            <mat-icon>error_outline</mat-icon>
+            {{ actionError() }}
+          </div>
+        }
+
+        <div class="timeline">
+          <div>
+            <span>提交时间</span>
+            <strong>
+              {{
+                application.submittedAt |
+                  date:'yyyy-MM-dd HH:mm'
+              }}
+            </strong>
+          </div>
+
+          <div>
+            <span>审核时间</span>
+            <strong>
+              @if (application.reviewedAt) {
+                {{
+                  application.reviewedAt |
+                    date:'yyyy-MM-dd HH:mm'
+                }}
+              } @else {
+                —
+              }
+            </strong>
+          </div>
+
+          <div>
+            <span>完成时间</span>
+            <strong>
+              @if (application.completedAt) {
+                {{
+                  application.completedAt |
+                    date:'yyyy-MM-dd HH:mm'
+                }}
+              } @else {
+                —
+              }
+            </strong>
+          </div>
+
+          <div>
+            <span>质保截止</span>
+            <strong>
+              @if (application.warrantyExpiresAt) {
+                {{
+                  application.warrantyExpiresAt |
+                    date:'yyyy-MM-dd'
+                }}
+              } @else {
+                —
+              }
+            </strong>
+          </div>
+        </div>
+
+        @if (application.reviewComment) {
+          <div class="review-result">
+            <strong>审核意见</strong>
+            <p>{{ application.reviewComment }}</p>
+          </div>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+
+  @if (customerApplications().length > 0) {
+    <mat-card>
+      <mat-card-content>
+        <div class="section-heading">
+          <mat-icon>history</mat-icon>
+
+          <div>
+            <h2>客户售后记录</h2>
+            <p>
+              共 {{ customerApplications().length }} 条
+            </p>
+          </div>
+        </div>
+
+        <div class="application-list">
+          @for (
+            application of customerApplications();
+            track application.applicationNo
+          ) {
+            <button
+              type="button"
+              class="application-row"
+              (click)="selectApplication(application)">
+
+              <div>
+                <strong>
+                  {{ application.applicationNo }}
+                </strong>
+
+                <span>
+                  {{ application.productName }}
+                  · {{ typeLabel(application.type) }}
+                </span>
+              </div>
+
+              <div class="list-status">
+                <mat-chip>
+                  {{ statusLabel(application.status) }}
+                </mat-chip>
+
+                <span>
+                  {{
+                    application.submittedAt |
+                      date:'yyyy-MM-dd HH:mm'
+                  }}
+                </span>
+              </div>
+            </button>
+          }
+        </div>
+      </mat-card-content>
+    </mat-card>
+  } @else if (
+    customerSearchCompleted() &&
+    !searchError()
+  ) {
+    <mat-card class="empty-card">
+      <mat-card-content>
+        <mat-icon>inbox</mat-icon>
+        <h3>暂无售后记录</h3>
+        <p>该客户目前没有售后申请。</p>
+      </mat-card-content>
+    </mat-card>
+  }
+
+</div>
