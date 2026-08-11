@@ -10,6 +10,11 @@ import {
   ViewChild
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import {
+  FormBuilder,
+  ReactiveFormsModule,
+  Validators
+} from '@angular/forms';
 import { finalize } from 'rxjs';
 
 import { MatButtonModule } from '@angular/material/button';
@@ -20,6 +25,11 @@ import {
   MatProgressSpinnerModule
 } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import {
+  MatFormFieldModule
+} from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
 import {
   KnowledgeDocumentService
@@ -41,7 +51,11 @@ import {
     MatChipsModule,
     MatIconModule,
     MatProgressSpinnerModule,
-    MatTooltipModule
+    MatTooltipModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule
   ],
   templateUrl:
     './knowledge-document-detail.component.html',
@@ -60,6 +74,9 @@ export class KnowledgeDocumentDetailComponent {
   private readonly knowledgeDocumentService =
     inject(KnowledgeDocumentService);
 
+  private readonly formBuilder =
+    inject(FormBuilder);
+
   readonly detail =
     signal<KnowledgeDocumentDetail | null>(null);
 
@@ -71,6 +88,38 @@ export class KnowledgeDocumentDetailComponent {
   readonly selectedFile = signal<File | null>(null);
   readonly isUploading = signal(false);
   readonly uploadSuccess = signal<string | null>(null);
+
+  readonly isEditing = signal(false);
+  readonly isSavingMetadata = signal(false);
+  readonly isArchiving = signal(false);
+  readonly managementSuccess = signal<string | null>(null);
+
+  readonly categories = [
+    { value: 'PRODUCT', label: '产品' },
+    { value: 'WARRANTY', label: '保修' },
+    { value: 'RETURN_EXCHANGE', label: '退换货' },
+    { value: 'REPAIR', label: '维修' },
+    { value: 'ORDER_PAYMENT', label: '订单与支付' },
+    { value: 'ACCOUNT', label: '账户' },
+    { value: 'GENERAL', label: '通用' }
+  ] as const;
+
+  readonly editForm =
+    this.formBuilder.nonNullable.group({
+      title: [
+        '',
+        [
+          Validators.required,
+          Validators.maxLength(200)
+        ]
+      ],
+      category: [
+        'GENERAL' as
+          import('../../types/knowledge-document.types')
+            .KnowledgeDocumentCategory,
+        Validators.required
+      ]
+    });
 
   readonly latestVersion = computed(() => {
     const document = this.detail();
@@ -108,6 +157,126 @@ export class KnowledgeDocumentDetailComponent {
 
   close(): void {
     this.closed.emit();
+  }
+
+  startEditing(): void {
+    const document = this.detail();
+
+    if (!document || document.status === 'ARCHIVED') {
+      return;
+    }
+
+    this.editForm.reset({
+      title: document.title,
+      category: document.category
+    });
+
+    this.errorMessage.set(null);
+    this.managementSuccess.set(null);
+    this.isEditing.set(true);
+  }
+
+  cancelEditing(): void {
+    this.isEditing.set(false);
+    this.editForm.reset();
+  }
+
+  saveMetadata(): void {
+    const document = this.detail();
+
+    if (!document) {
+      return;
+    }
+
+    if (this.editForm.invalid) {
+      this.editForm.markAllAsTouched();
+      return;
+    }
+
+    const value = this.editForm.getRawValue();
+
+    this.isSavingMetadata.set(true);
+    this.errorMessage.set(null);
+    this.managementSuccess.set(null);
+
+    this.knowledgeDocumentService
+      .updateDocument(
+        document.documentNo,
+        {
+          title: value.title.trim(),
+          category: value.category
+        }
+      )
+      .pipe(
+        finalize(() =>
+          this.isSavingMetadata.set(false)
+        )
+      )
+      .subscribe({
+        next: updated => {
+          this.detail.set(updated);
+          this.isEditing.set(false);
+
+          this.managementSuccess.set(
+            '文档标题和分类已更新。'
+          );
+
+          this.documentChanged.emit();
+        },
+        error: error => {
+          this.errorMessage.set(
+            this.knowledgeDocumentService
+              .resolveErrorMessage(error)
+          );
+        }
+      });
+  }
+
+  archiveDocument(): void {
+    const document = this.detail();
+
+    if (!document || document.status === 'ARCHIVED') {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `确定要归档“${document.title}”吗？` +
+      '归档后不能再新增或发布版本。'
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    this.isArchiving.set(true);
+    this.errorMessage.set(null);
+    this.managementSuccess.set(null);
+
+    this.knowledgeDocumentService
+      .archiveDocument(document.documentNo)
+      .pipe(
+        finalize(() =>
+          this.isArchiving.set(false)
+        )
+      )
+      .subscribe({
+        next: archived => {
+          this.detail.set(archived);
+          this.isEditing.set(false);
+
+          this.managementSuccess.set(
+            '知识文档已归档。'
+          );
+
+          this.documentChanged.emit();
+        },
+        error: error => {
+          this.errorMessage.set(
+            this.knowledgeDocumentService
+              .resolveErrorMessage(error)
+          );
+        }
+      });
   }
 
   onFileSelected(

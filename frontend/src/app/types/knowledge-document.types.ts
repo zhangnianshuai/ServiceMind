@@ -89,3 +89,33 @@ export interface KnowledgeVersionDetail
   documentNo: string;
   rawContent: string;
 }
+export interface KnowledgeSearchHit {
+  vectorStoreId: string;
+  documentNo: string;
+  title: string;
+  category: KnowledgeDocumentCategory;
+  versionNo: number;
+  chunkNo: number;
+  score: number;
+  content: string;
+}
+
+export interface KnowledgeSearchResponse {
+  query: string;
+  category: KnowledgeDocumentCategory | null;
+  topK: number;
+  similarityThreshold: number;
+  resultCount: number;
+  hits: KnowledgeSearchHit[];
+}
+
+export interface KnowledgeSearchParameters {
+  query: string;
+  category?: KnowledgeDocumentCategory;
+  topK?: number;
+  similarityThreshold?: number;
+}
+export interface UpdateKnowledgeDocumentRequest {
+  title: string;
+  category: KnowledgeDocumentCategory;
+}

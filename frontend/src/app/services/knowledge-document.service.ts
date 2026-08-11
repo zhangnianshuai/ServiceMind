@@ -12,7 +12,10 @@ import {
   KnowledgeDocumentFilters,
   KnowledgeDocumentSummary,
   KnowledgePublishResponse,
-  KnowledgeVersionDetail
+  KnowledgeSearchParameters,
+  KnowledgeSearchResponse,
+  KnowledgeVersionDetail,
+  UpdateKnowledgeDocumentRequest
 } from '../types/knowledge-document.types';
 
 @Injectable({
@@ -128,6 +131,52 @@ export class KnowledgeDocumentService {
       `${this.apiUrl}/${encodeURIComponent(documentNo)}` +
         '/versions/upload',
       formData
+    );
+  }
+
+  searchKnowledge(
+    parameters: KnowledgeSearchParameters
+  ): Observable<KnowledgeSearchResponse> {
+    let params = new HttpParams()
+      .set('query', parameters.query)
+      .set(
+        'topK',
+        String(parameters.topK ?? 5)
+      )
+      .set(
+        'similarityThreshold',
+        String(parameters.similarityThreshold ?? 0.35)
+      );
+
+    if (parameters.category) {
+      params = params.set(
+        'category',
+        parameters.category
+      );
+    }
+
+    return this.httpClient.get<KnowledgeSearchResponse>(
+      '/api/knowledge/search',
+      { params }
+    );
+  }
+
+  updateDocument(
+    documentNo: string,
+    request: UpdateKnowledgeDocumentRequest
+  ): Observable<KnowledgeDocumentDetail> {
+    return this.httpClient.patch<KnowledgeDocumentDetail>(
+      `${this.apiUrl}/${encodeURIComponent(documentNo)}`,
+      request
+    );
+  }
+
+  archiveDocument(
+    documentNo: string
+  ): Observable<KnowledgeDocumentDetail> {
+    return this.httpClient.post<KnowledgeDocumentDetail>(
+      `${this.apiUrl}/${encodeURIComponent(documentNo)}/archive`,
+      {}
     );
   }
 

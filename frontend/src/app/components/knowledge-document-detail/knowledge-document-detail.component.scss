@@ -252,3 +252,62 @@ mat-chip {
     font-weight: 600;
   }
 }
+.detail-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+}
+
+.archive-button {
+  color: #b45309;
+  border-color: #f59e0b;
+}
+
+.edit-form {
+  display: grid;
+  grid-template-columns:
+    minmax(0, 2fr)
+    minmax(180px, 1fr)
+    auto;
+  gap: 0.65rem;
+  align-items: start;
+  margin: 1rem 0;
+  padding: 0.85rem;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  background: #f8fafc;
+}
+
+.edit-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-top: 0.2rem;
+
+  button {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+  }
+}
+
+@media (max-width: 800px) {
+  .edit-form {
+    grid-template-columns: 1fr;
+  }
+
+  .edit-actions {
+    justify-content: flex-end;
+  }
+
+  .detail-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}

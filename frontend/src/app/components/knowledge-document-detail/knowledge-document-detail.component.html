@@ -6,13 +6,49 @@
         <p>{{ documentNo() }}</p>
       </div>
 
-      <button
-        mat-icon-button
-        type="button"
-        matTooltip="关闭详情"
-        (click)="close()">
-        <mat-icon>close</mat-icon>
-      </button>
+      <div class="detail-actions">
+        @if (
+          detail();
+          as currentDocument
+        ) {
+          @if (currentDocument.status !== 'ARCHIVED') {
+            <button
+              mat-stroked-button
+              type="button"
+              [disabled]="
+                isSavingMetadata() ||
+                isArchiving()
+              "
+              (click)="startEditing()">
+              <mat-icon>edit</mat-icon>
+              编辑
+            </button>
+
+            <button
+              mat-stroked-button
+              type="button"
+              class="archive-button"
+              [disabled]="isArchiving()"
+              (click)="archiveDocument()">
+              @if (isArchiving()) {
+                <mat-spinner diameter="18"></mat-spinner>
+                归档中
+              } @else {
+                <mat-icon>archive</mat-icon>
+                归档
+              }
+            </button>
+          }
+        }
+
+        <button
+          mat-icon-button
+          type="button"
+          matTooltip="关闭详情"
+          (click)="close()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
     </div>
 
     @if (isLoading() && !detail()) {
@@ -56,6 +92,75 @@
           </strong>
         </div>
       </div>
+
+      @if (managementSuccess()) {
+        <div class="feedback success-feedback">
+          <mat-icon>check_circle</mat-icon>
+          <span>{{ managementSuccess() }}</span>
+        </div>
+      }
+
+      @if (isEditing()) {
+        <form
+          class="edit-form"
+          [formGroup]="editForm"
+          (ngSubmit)="saveMetadata()">
+
+          <mat-form-field appearance="outline">
+            <mat-label>文档标题</mat-label>
+
+            <input
+              matInput
+              maxlength="200"
+              formControlName="title">
+
+            @if (
+              editForm.controls.title.touched &&
+              editForm.controls.title.hasError('required')
+            ) {
+              <mat-error>请输入文档标题</mat-error>
+            }
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>文档分类</mat-label>
+
+            <mat-select formControlName="category">
+              @for (
+                category of categories;
+                track category.value
+              ) {
+                <mat-option [value]="category.value">
+                  {{ category.label }}
+                </mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <div class="edit-actions">
+            <button
+              mat-button
+              type="button"
+              [disabled]="isSavingMetadata()"
+              (click)="cancelEditing()">
+              取消
+            </button>
+
+            <button
+              mat-flat-button
+              type="submit"
+              [disabled]="isSavingMetadata()">
+              @if (isSavingMetadata()) {
+                <mat-spinner diameter="18"></mat-spinner>
+                保存中
+              } @else {
+                <mat-icon>save</mat-icon>
+                保存修改
+              }
+            </button>
+          </div>
+        </form>
+      }
 
       @if (publishSuccess()) {
         <div class="feedback success-feedback">
