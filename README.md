@@ -418,7 +418,9 @@ AI 客服结合多轮会话、知识库 RAG 与 Spring AI Tool Calling，在回�
 
 ## 在线演示
 
-公网部署进行中。部署完成后将在此补充在线访问地址和演示账号。
+
+- **ServiceMind 在线 Demo**：http://124.221.202.140/
+- **部署环境**：Tencent Cloud + Docker Compose + Nginx
 
 ## 项目说明
 
