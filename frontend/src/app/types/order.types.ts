@@ -28,3 +28,13 @@ export interface OrderDetail extends OrderSummary {
   completedAt: string | null;
   items: OrderItem[];
 }
+
+export interface CreateOrderItemRequest {
+  sku: string;
+  quantity: number;
+}
+
+export interface CreateOrderRequest {
+  customerNo: string;
+  items: CreateOrderItemRequest[];
+}

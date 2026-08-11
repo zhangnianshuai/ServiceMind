@@ -7,6 +7,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 
 import {
+  CreateOrderRequest,
   OrderDetail,
   OrderSummary
 } from '../types/order.types';
@@ -39,11 +40,56 @@ export class OrderService {
     );
   }
 
+  create(
+    request: CreateOrderRequest
+  ): Observable<OrderDetail> {
+    return this.httpClient.post<OrderDetail>(
+      this.apiUrl,
+      request
+    );
+  }
+
+  pay(
+    orderNo: string
+  ): Observable<OrderDetail> {
+    return this.postOrderAction(
+      orderNo,
+      'pay'
+    );
+  }
+
+  ship(
+    orderNo: string
+  ): Observable<OrderDetail> {
+    return this.postOrderAction(
+      orderNo,
+      'ship'
+    );
+  }
+
+  complete(
+    orderNo: string
+  ): Observable<OrderDetail> {
+    return this.postOrderAction(
+      orderNo,
+      'complete'
+    );
+  }
+
+  cancel(
+    orderNo: string
+  ): Observable<OrderDetail> {
+    return this.postOrderAction(
+      orderNo,
+      'cancel'
+    );
+  }
+
   resolveErrorMessage(
     error: unknown
   ): string {
     if (!(error instanceof HttpErrorResponse)) {
-      return '订单查询失败，请稍后重试。';
+      return '订单操作失败，请稍后重试。';
     }
 
     if (error.status === 0) {
@@ -64,12 +110,30 @@ export class OrderService {
       if (typeof payload['message'] === 'string') {
         return payload['message'];
       }
+
+      if (typeof payload['error'] === 'string') {
+        return payload['error'];
+      }
     }
 
     if (error.status === 404) {
-      return '没有找到对应的订单。';
+      return '没有找到对应的数据。';
     }
 
-    return `订单查询失败，服务器返回状态码 ${error.status}。`;
+    if (error.status === 409) {
+      return '当前订单状态不允许执行此操作。';
+    }
+
+    return `订单操作失败，服务器返回状态码 ${error.status}。`;
+  }
+
+  private postOrderAction(
+    orderNo: string,
+    action: string
+  ): Observable<OrderDetail> {
+    return this.httpClient.post<OrderDetail>(
+      `${this.apiUrl}/${encodeURIComponent(orderNo)}/${action}`,
+      {}
+    );
   }
 }
