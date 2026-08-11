@@ -1,8 +1,12 @@
 import { Component } from '@angular/core';
-
 import {
-  KnowledgeDocumentsComponent
-} from './components/knowledge-documents/knowledge-documents.component';
+  RouterLink,
+  RouterLinkActive,
+  RouterOutlet
+} from '@angular/router';
+import { MatIconModule } from '@angular/material/icon';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
 import {
   ChatComponent
 } from './components/chat/chat.component';
@@ -10,7 +14,11 @@ import {
 @Component({
   selector: 'app-root',
   imports: [
-    KnowledgeDocumentsComponent,
+    RouterOutlet,
+    RouterLink,
+    RouterLinkActive,
+    MatIconModule,
+    MatTooltipModule,
     ChatComponent
   ],
   templateUrl: './app.html',
