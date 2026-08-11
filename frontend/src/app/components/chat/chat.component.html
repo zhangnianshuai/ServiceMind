@@ -1,78 +1,365 @@
 <div class="chat-container">
-  <div class="chat-header">
+
+  <header class="chat-header">
+
     <div class="chat-title">
-      <mat-icon class="chat-icon">support_agent</mat-icon>
-      <h2>ServiceMind 智能客服</h2>
+      <div class="assistant-logo">
+        <mat-icon>support_agent</mat-icon>
+      </div>
+
+      <div>
+        <strong>ServiceMind AI</strong>
+
+        <span>
+          {{ modeDescription() }}
+        </span>
+      </div>
     </div>
-  </div>
 
-  <div class="chat-messages" #messagesContainer>
-    @for (message of messages(); track message.id) {
-      <div class="message-wrapper" [class.user-message]="message.isUser" [class.assistant-message]="!message.isUser">
-        <div class="message-avatar">
-          @if (message.isUser) {
-            <div class="user-avatar">Y</div>
-          } @else {
-            <div class="assistant-avatar">A</div>
+    <div class="header-actions">
+
+      <mat-chip class="mode-chip">
+        {{ modeLabel() }}
+      </mat-chip>
+
+      <button
+        mat-icon-button
+        type="button"
+        matTooltip="新建对话"
+        [disabled]="isSending()"
+        (click)="startNewConversation()">
+
+        <mat-icon>refresh</mat-icon>
+      </button>
+
+      <button
+        mat-icon-button
+        type="button"
+        matTooltip="模型设置"
+        (click)="toggleModelSettings()">
+
+        <mat-icon>tune</mat-icon>
+      </button>
+
+    </div>
+
+  </header>
+
+  @if (showModelSettings()) {
+    <section class="model-settings">
+
+      <div class="settings-title">
+        <div>
+          <strong>模型调用方式</strong>
+
+          <span>
+            BYOK 密钥仅用于当前临时会话
+          </span>
+        </div>
+
+        <button
+          mat-icon-button
+          type="button"
+          (click)="toggleModelSettings()">
+
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      @if (modelSession(); as session) {
+
+        <div class="session-card">
+
+          <div class="session-status">
+            <mat-icon>verified_user</mat-icon>
+
+            <div>
+              <strong>BYOK 已连接</strong>
+
+              <span>
+                {{ session.provider }}
+                ·
+                {{ session.model }}
+              </span>
+            </div>
+          </div>
+
+          <div class="expiry">
+            有效期至：
+            {{
+              session.expiresAt |
+                date:'MM-dd HH:mm:ss'
+            }}
+          </div>
+
+          <button
+            mat-stroked-button
+            type="button"
+            [disabled]="isRevoking()"
+            (click)="disconnectByok()">
+
+            <mat-icon>logout</mat-icon>
+            切换回平台模型
+          </button>
+
+          @if (isRevoking()) {
+            <div class="inline-loading">
+              <mat-spinner diameter="18">
+              </mat-spinner>
+
+              <span>正在撤销临时会话...</span>
+            </div>
           }
+
+        </div>
+
+      } @else {
+
+        <div class="platform-mode">
+
+          <div>
+            <mat-icon>cloud</mat-icon>
+
+            <div>
+              <strong>当前：平台模型</strong>
+
+              <span>
+                使用 ServiceMind 服务器配置的模型凭证
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+        <div class="byok-form">
+
+          <div class="byok-heading">
+            <strong>使用自己的 API Key</strong>
+
+            <span>
+              当前仅支持 DashScope qwen-plus
+            </span>
+          </div>
+
+          <mat-form-field appearance="outline">
+            <mat-label>
+              DashScope API Key
+            </mat-label>
+
+            <input
+              matInput
+              type="password"
+              autocomplete="off"
+              [(ngModel)]="byokApiKey"
+              placeholder="输入后创建临时模型会话">
+
+            <mat-icon matSuffix>
+              key
+            </mat-icon>
+          </mat-form-field>
+
+          <button
+            mat-flat-button
+            type="button"
+            [disabled]="
+              !byokApiKey.trim() ||
+              isConnecting()
+            "
+            (click)="connectByok()">
+
+            <mat-icon>link</mat-icon>
+            连接 BYOK
+          </button>
+
+          @if (isConnecting()) {
+            <div class="inline-loading">
+              <mat-spinner diameter="18">
+              </mat-spinner>
+
+              <span>
+                正在验证模型凭证...
+              </span>
+            </div>
+          }
+
+        </div>
+
+      }
+
+      @if (modelError()) {
+        <div class="model-error">
+          <mat-icon>error_outline</mat-icon>
+
+          <span>
+            {{ modelError() }}
+          </span>
+        </div>
+      }
+
+    </section>
+  }
+
+  <div
+    class="chat-messages"
+    #messagesContainer>
+
+    @for (
+      message of messages();
+      track message.id
+    ) {
+
+      <div
+        class="message-wrapper"
+        [class.user-message]="
+          message.role === 'USER'
+        "
+        [class.assistant-message]="
+          message.role === 'ASSISTANT'
+        ">
+
+        <div class="avatar">
+
+          @if (message.role === 'USER') {
+            <mat-icon>person</mat-icon>
+          } @else {
+            <mat-icon>smart_toy</mat-icon>
+          }
+
         </div>
 
         <div class="message-content">
-          <div class="message-header">
-            <span class="sender-name">{{ message.isUser ? '你' : 'ServiceMind' }}</span>
-            <span class="message-time">{{ message.timestamp | date:'short' }}</span>
+
+          <div class="message-meta">
+
+            <span>
+              {{
+                message.role === 'USER'
+                  ? '你'
+                  : 'ServiceMind'
+              }}
+            </span>
+
+            @if (message.credentialSource) {
+              <span class="credential-source">
+                {{
+                  credentialLabel(
+                    message.credentialSource
+                  )
+                }}
+              </span>
+            }
+
+            <time>
+              {{
+                message.timestamp |
+                  date:'HH:mm'
+              }}
+            </time>
+
           </div>
 
-          <mat-card class="message-card">
-            <mat-card-content>
-              <p class="message-text">{{ message.content }}</p>
-            </mat-card-content>
-          </mat-card>
+          <div class="message-bubble">
+            {{ message.content }}
+          </div>
+
         </div>
+
       </div>
+
     }
 
-    @if (isLoading()) {
-      <div class="message-wrapper assistant-message">
-        <div class="message-avatar">
-          <div class="assistant-avatar">A</div>
+    @if (isSending()) {
+
+      <div
+        class="
+          message-wrapper
+          assistant-message
+        ">
+
+        <div class="avatar">
+          <mat-icon>smart_toy</mat-icon>
         </div>
+
         <div class="message-content">
-          <div class="message-header">
-            <span class="sender-name">ServiceMind</span>
+
+          <div class="message-meta">
+            <span>ServiceMind</span>
           </div>
-          <mat-card class="message-card loading-card">
-            <mat-card-content>
-              <div class="loading-indicator">
-                <mat-spinner diameter="20"></mat-spinner>
-                <span>正在思考……</span>
-              </div>
-            </mat-card-content>
-          </mat-card>
+
+          <div
+            class="
+              message-bubble
+              loading-bubble
+            ">
+
+            <mat-spinner diameter="18">
+            </mat-spinner>
+
+            <span>
+              正在分析业务信息...
+            </span>
+
+          </div>
+
         </div>
+
       </div>
+
     }
+
   </div>
 
-  <div class="chat-input-container">
-    <mat-form-field class="chat-input" appearance="outline">
-      <mat-label>Message</mat-label>
-      <input
+  @if (chatError()) {
+    <div class="chat-error">
+
+      <mat-icon>error_outline</mat-icon>
+
+      <span>
+        {{ chatError() }}
+      </span>
+
+    </div>
+  }
+
+  <footer class="chat-input-container">
+
+    <mat-form-field
+      appearance="outline"
+      class="chat-input">
+
+      <mat-label>
+        向 ServiceMind 提问
+      </mat-label>
+
+      <textarea
         matInput
+        rows="2"
+        maxlength="4000"
         [(ngModel)]="currentMessage"
-        (keypress)="onKeyPress($event)"
-        placeholder="请输入订单、售后或产品相关问题……"
-        [disabled]="isLoading()">
-      <mat-icon matSuffix>chat</mat-icon>
+        (keydown)="onKeydown($event)"
+        [disabled]="isSending()"
+        placeholder="例如：ORD-20260001 现在是什么状态？">
+      </textarea>
+
+      <mat-hint align="end">
+        {{ currentMessage.length }}/4000
+      </mat-hint>
+
     </mat-form-field>
 
     <button
       mat-fab
-      color="primary"
+      type="button"
       class="send-button"
-      (click)="sendMessage()"
-      [disabled]="!currentMessage().trim() || isLoading()">
+      [disabled]="
+        !currentMessage.trim() ||
+        isSending()
+      "
+      (click)="sendMessage()">
+
       <mat-icon>send</mat-icon>
     </button>
-  </div>
+
+  </footer>
+
 </div>

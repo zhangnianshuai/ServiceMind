@@ -1,23 +1,70 @@
-import { Component, signal, ViewChild, ElementRef, effect } from '@angular/core';
-import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
-import { MatCardModule } from '@angular/material/card';
-import { MatButtonModule } from '@angular/material/button';
-import { MatInputModule } from '@angular/material/input';
-import { MatFormFieldModule } from '@angular/material/form-field';
-import { MatIconModule } from '@angular/material/icon';
-import { MatTableModule } from '@angular/material/table';
-import { MatChipsModule } from '@angular/material/chips';
-import { MatDividerModule } from '@angular/material/divider';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { ChatService } from '../../services/chat.service';
+import {
+  Component,
+  ElementRef,
+  ViewChild,
+  computed,
+  effect,
+  inject,
+  signal
+} from '@angular/core';
 
-interface Message {
-  id: string;
-  content: string;
-  isUser: boolean;
-  timestamp: Date;
-}
+import {
+  CommonModule
+} from '@angular/common';
+
+import {
+  FormsModule
+} from '@angular/forms';
+
+import {
+  finalize
+} from 'rxjs';
+
+import {
+  MatButtonModule
+} from '@angular/material/button';
+
+import {
+  MatCardModule
+} from '@angular/material/card';
+
+import {
+  MatChipsModule
+} from '@angular/material/chips';
+
+import {
+  MatFormFieldModule
+} from '@angular/material/form-field';
+
+import {
+  MatIconModule
+} from '@angular/material/icon';
+
+import {
+  MatInputModule
+} from '@angular/material/input';
+
+import {
+  MatProgressSpinnerModule
+} from '@angular/material/progress-spinner';
+
+import {
+  MatTooltipModule
+} from '@angular/material/tooltip';
+
+import {
+  ChatService
+} from '../../services/chat.service';
+
+import {
+  ModelSessionService
+} from '../../services/model-session.service';
+
+import {
+  ChatUiMessage,
+  CredentialSource,
+  ModelSessionResponse
+} from '../../types/chat.types';
 
 @Component({
   selector: 'app-chat',
@@ -25,108 +72,316 @@ interface Message {
   imports: [
     CommonModule,
     FormsModule,
-    MatCardModule,
     MatButtonModule,
-    MatInputModule,
+    MatCardModule,
+    MatChipsModule,
     MatFormFieldModule,
     MatIconModule,
-    MatTableModule,
-    MatChipsModule,
-    MatDividerModule,
-    MatProgressSpinnerModule
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatTooltipModule
   ],
   templateUrl: './chat.component.html',
-  styleUrls: ['./chat.component.scss']
+  styleUrl: './chat.component.scss'
 })
 export class ChatComponent {
-  // ViewChild reference to the messages container for auto-scrolling
-  @ViewChild('messagesContainer') private readonly messagesContainer!: ElementRef;
+  @ViewChild('messagesContainer')
+  private messagesContainer?:
+    ElementRef<HTMLElement>;
 
-  // Signals for reactive state management
-  messages = signal<Message[]>([
-    {
-      id: '1',
-      content: '您好，我是 ServiceMind 智能客服，请问有什么可以帮助您？',
-      isUser: false,
-      timestamp: new Date(),
-    }
-  ]);
+  private readonly chatService =
+    inject(ChatService);
 
-  currentMessage = signal('');
-  isLoading = signal(false);
+  private readonly modelSessionService =
+    inject(ModelSessionService);
 
-  // Computed signal for display columns
-  displayedColumns = signal(['bookingNumber', 'firstName', 'lastName', 'date', 'bookingStatus', 'from', 'to', 'seatNumber', 'bookingClass']);
+  readonly modelSession =
+    signal<ModelSessionResponse | null>(null);
 
-  constructor(private readonly chatService: ChatService) {
-    // Effect to auto-scroll when messages change
+  readonly messages =
+    signal<ChatUiMessage[]>([
+      this.createWelcomeMessage()
+    ]);
+
+  readonly chatId =
+    signal<string | null>(null);
+
+  readonly isSending =
+    signal(false);
+
+  readonly isConnecting =
+    signal(false);
+
+  readonly isRevoking =
+    signal(false);
+
+  readonly showModelSettings =
+    signal(false);
+
+  readonly chatError =
+    signal<string | null>(null);
+
+  readonly modelError =
+    signal<string | null>(null);
+
+  currentMessage = '';
+
+  byokApiKey = '';
+
+  readonly modeLabel =
+    computed(() =>
+      this.modelSession()
+        ? 'BYOK'
+        : '平台模型'
+    );
+
+  readonly modeDescription =
+    computed(() =>
+      this.modelSession()
+        ? '用户临时凭证'
+        : 'ServiceMind 平台凭证'
+    );
+
+  constructor() {
     effect(() => {
-      // This effect runs whenever messages() signal changes
       this.messages();
-      this.scrollToBottom();
+      this.isSending();
+
+      setTimeout(() => {
+        this.scrollToBottom();
+      });
     });
   }
 
-  sendMessage() {
-    const messageText = this.currentMessage().trim();
-    if (!messageText) return;
+  sendMessage(): void {
+    const text =
+      this.currentMessage.trim();
 
-    // Add user message
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      content: messageText,
-      isUser: true,
-      timestamp: new Date()
-    };
+    if (!text || this.isSending()) {
+      return;
+    }
 
-    this.messages.update(messages => [...messages, userMessage]);
-    this.currentMessage.set('');
-    this.isLoading.set(true);
+    this.currentMessage = '';
+    this.chatError.set(null);
 
-    // Send message to API
-    this.chatService.sendMessage(messageText).subscribe({
-      next: (response) => {
-        const aiResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          content: response.text,
-          isUser: false,
-          timestamp: new Date()
-        };
-
-        this.messages.update(messages => [...messages, aiResponse]);
-        this.isLoading.set(false);
-      },
-      error: (error) => {
-        console.error('Error sending message:', error);
-
-        // Fallback message if API fails
-        const errorResponse: Message = {
-          id: (Date.now() + 1).toString(),
-          content: '暂时无法连接智能客服服务，请确认后端已经启动后重试。',
-          isUser: false,
-          timestamp: new Date()
-        };
-
-        this.messages.update(messages => [...messages, errorResponse]);
-        this.isLoading.set(false);
+    this.messages.update(messages => [
+      ...messages,
+      {
+        id: this.createId(),
+        content: text,
+        role: 'USER',
+        timestamp: new Date()
       }
-    });
+    ]);
+
+    this.isSending.set(true);
+
+    this.chatService
+      .sendMessage(
+        text,
+        this.chatId(),
+        this.modelSession()?.sessionId ?? null
+      )
+      .pipe(
+        finalize(() => {
+          this.isSending.set(false);
+        })
+      )
+      .subscribe({
+        next: response => {
+          this.chatId.set(
+            response.chatId
+          );
+
+          this.messages.update(messages => [
+            ...messages,
+            {
+              id: this.createId(),
+              content: response.text,
+              role: 'ASSISTANT',
+              timestamp: new Date(),
+              credentialSource:
+                response.credentialSource
+            }
+          ]);
+        },
+
+        error: error => {
+          this.chatError.set(
+            this.chatService
+              .resolveErrorMessage(error)
+          );
+        }
+      });
   }
 
-  onKeyPress(event: KeyboardEvent) {
-    if (event.key === 'Enter' && !event.shiftKey) {
+  connectByok(): void {
+    const apiKey =
+      this.byokApiKey.trim();
+
+    if (!apiKey) {
+      this.modelError.set(
+        '请输入 DashScope API Key。'
+      );
+
+      return;
+    }
+
+    this.isConnecting.set(true);
+    this.modelError.set(null);
+
+    this.modelSessionService
+      .create(apiKey)
+      .pipe(
+        finalize(() => {
+          this.isConnecting.set(false);
+
+          /*
+           * API Key 不在前端长期保留。
+           * 无论成功失败，请求结束后都立即清空。
+           */
+          this.byokApiKey = '';
+        })
+      )
+      .subscribe({
+        next: session => {
+          this.modelSession.set(session);
+
+          this.showModelSettings.set(false);
+
+          this.startNewConversation();
+        },
+
+        error: error => {
+          this.modelError.set(
+            this.modelSessionService
+              .resolveErrorMessage(error)
+          );
+        }
+      });
+  }
+
+  usePlatformMode(): void {
+    const session =
+      this.modelSession();
+
+    if (!session) {
+      this.showModelSettings.set(false);
+      return;
+    }
+
+    this.isRevoking.set(true);
+    this.modelError.set(null);
+
+    this.modelSessionService
+      .revoke(session.sessionId)
+      .pipe(
+        finalize(() => {
+          this.isRevoking.set(false);
+        })
+      )
+      .subscribe({
+        next: () => {
+          this.modelSession.set(null);
+
+          this.showModelSettings.set(false);
+
+          this.startNewConversation();
+        },
+
+        error: error => {
+          this.modelError.set(
+            this.modelSessionService
+              .resolveErrorMessage(error)
+          );
+        }
+      });
+  }
+
+  disconnectByok(): void {
+    this.usePlatformMode();
+  }
+
+  startNewConversation(): void {
+    this.chatId.set(null);
+    this.chatError.set(null);
+
+    this.messages.set([
+      this.createWelcomeMessage()
+    ]);
+  }
+
+  toggleModelSettings(): void {
+    this.modelError.set(null);
+
+    this.showModelSettings.update(
+      value => !value
+    );
+  }
+
+  onKeydown(
+    event: KeyboardEvent
+  ): void {
+    if (
+      event.key === 'Enter' &&
+      !event.shiftKey
+    ) {
       event.preventDefault();
+
       this.sendMessage();
     }
   }
 
-  // Scroll to the bottom of the messages container
+  credentialLabel(
+    source?: CredentialSource
+  ): string {
+    if (source === 'USER_SESSION') {
+      return 'BYOK';
+    }
+
+    if (source === 'PLATFORM') {
+      return '平台';
+    }
+
+    return '';
+  }
+
+  private createWelcomeMessage():
+      ChatUiMessage {
+    const content =
+      this.modelSession()
+        ? '已进入 BYOK 模式。你可以继续询问知识库、订单、售后或工单问题。'
+        : '你好，我是 ServiceMind 智能客服。你可以询问知识库、订单、售后或工单相关问题。';
+
+    return {
+      id: this.createId(),
+      content,
+      role: 'ASSISTANT',
+      timestamp: new Date()
+    };
+  }
+
+  private createId(): string {
+    if (
+      typeof crypto !== 'undefined' &&
+      typeof crypto.randomUUID === 'function'
+    ) {
+      return crypto.randomUUID();
+    }
+
+    return `${Date.now()}-${Math.random()}`;
+  }
+
   private scrollToBottom(): void {
-    setTimeout(() => {
-      if (this.messagesContainer) {
-        const container = this.messagesContainer.nativeElement;
-        container.scrollTop = container.scrollHeight;
-      }
-    }, 100);
+    const element =
+      this.messagesContainer
+        ?.nativeElement;
+
+    if (!element) {
+      return;
+    }
+
+    element.scrollTop =
+      element.scrollHeight;
   }
 }
