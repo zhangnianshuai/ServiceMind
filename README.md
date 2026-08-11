@@ -352,6 +352,50 @@ ServiceMind/
 └─ README.md
 ```
 
+<!-- servicemind-showcase:start -->
+## 系统界面
+
+### 订单工作台
+
+支持订单全量分页、订单号/客户/状态筛选，以及受业务规则约束的订单状态流转。
+
+<p align="center">
+  <img src="./docs/screenshots/01-orders.png" alt="ServiceMind 订单工作台" width="100%">
+</p>
+
+### 售后服务
+
+售后申请与订单、客户信息关联，支持多条件检索、详情查看及基于当前状态的审核与处理流程。
+
+<p align="center">
+  <img src="./docs/screenshots/02-after-sales.png" alt="ServiceMind 售后服务工作台" width="100%">
+</p>
+
+### 客服工单
+
+工单工作台展示优先级、分类、负责人及处理状态，并支持分配、等待客户、恢复处理和解决等流程。
+
+<p align="center">
+  <img src="./docs/screenshots/03-tickets.png" alt="ServiceMind 客服工单工作台" width="100%">
+</p>
+
+### 知识库管理
+
+知识库支持文档管理、版本控制、发布/归档、文件上传、向量化与语义检索。
+
+<p align="center">
+  <img src="./docs/screenshots/04-knowledge.png" alt="ServiceMind 知识库管理" width="100%">
+</p>
+
+### AI 智能客服
+
+AI 客服结合多轮会话、知识库 RAG 与 Spring AI Tool Calling，在回答知识问题的同时可读取订单、售后、工单等业务上下文。
+
+<p align="center">
+  <img src="./docs/screenshots/05-ai-support.png" alt="ServiceMind AI 智能客服" width="100%">
+</p>
+<!-- servicemind-showcase:end -->
+
 ## 当前进度
 
 - [x] 客户 / 产品 / 订单领域
