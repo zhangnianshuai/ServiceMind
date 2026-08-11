@@ -74,10 +74,10 @@ public class OrderQueryService {
             int size) {
 
         String normalizedOrderNo =
-            normalizeOptional(orderNo);
+            toLikePattern(orderNo);
 
         String normalizedCustomerNo =
-            normalizeOptional(customerNo);
+            toLikePattern(customerNo);
 
         PageRequest pageable =
             PageRequest.of(
